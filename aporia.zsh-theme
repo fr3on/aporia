@@ -101,7 +101,7 @@ else
   _AP_ICO_OK="✓"       # Success
   _AP_ICO_ERR="✘"      # Error
   _AP_ICO_TIME="◷"     # Clock
-  _AP_ICO_EXEC="⌛"     # Hourglass
+  _AP_ICO_EXEC="󱎫"     # Stopwatch (Nerd Font)
   _AP_ICO_PY=""      # Python
   _AP_ICO_NODE=""    # Node
   _AP_ICO_RUST=""    # Rust
