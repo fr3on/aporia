@@ -48,7 +48,7 @@ check_shell() {
 
   if [ "${SHELL##*/}" != "zsh" ]; then
     warn "Currently using ${SHELL##*/}. You will need to switch to zsh to see the theme."
-    printf "  Run: ${C_BOLD}chsh -s \$(which zsh)${C_RESET} then log out and back in.\n"
+    printf "  Run: %bchsh -s \$(which zsh)%b then log out and back in.\n" "${C_BOLD}" "${C_RESET}"
   fi
 }
 
@@ -105,12 +105,12 @@ install_uninstaller() {
 # ─── MAIN ────────────────────────────────────────────────────────────────────
 
 main() {
-  printf "\n${C_BOLD}aporia${C_RESET} ${C_DIM}zsh theme · github.com/fr3on/aporia${C_RESET}\n"
+  printf "\n%baporia%b %bzsh theme · github.com/fr3on/aporia%b\n" "${C_BOLD}" "${C_RESET}" "${C_DIM}" "${C_RESET}"
   check_shell
   install_theme
   patch_zshrc
   install_uninstaller
-  printf "\n${C_GREEN}${C_BOLD}done.${C_RESET} ${C_DIM}reload: source ~/.zshrc${C_RESET}\n\n"
+  printf "\n%b%bdone.%b %breload: source ~/.zshrc%b\n\n" "${C_GREEN}" "${C_BOLD}" "${C_RESET}" "${C_DIM}" "${C_RESET}"
 }
 
 main "$@"

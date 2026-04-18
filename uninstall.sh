@@ -19,13 +19,13 @@ remove_theme() {
     rm -f "$THEME_DEST"
     ok "removed $THEME_DEST"
   else
-    warn "~/.aporia.zsh-theme not found — skipping"
+    warn "$HOME/.aporia.zsh-theme not found — skipping"
   fi
 }
 
 restore_zshrc() {
   hdr "Restoring ~/.zshrc"
-  [ -f "$ZSHRC" ] || { warn "~/.zshrc not found — skipping"; return; }
+  [ -f "$ZSHRC" ] || { warn "$HOME/.zshrc not found — skipping"; return; }
 
   tmp=$(mktemp)
   grep -Ev "^# aporia\.zsh-theme$|^source ['\"]?$HOME/\.aporia\.zsh-theme['\"]?$" \
@@ -38,22 +38,25 @@ restore_zshrc() {
   fi
 
   mv "$tmp" "$ZSHRC"
-  ok "~/.zshrc cleaned"
+  ok "$HOME/.zshrc cleaned"
 }
 
 remove_leftovers() {
   hdr "Cleaning up"
   for f in "$HOME/.aporia-uninstall.sh" "${ZSHRC}.aporia.bak"; do
-    [ -f "$f" ] && rm -f "$f" && ok "removed $f" || true
+    if [ -f "$f" ]; then
+      rm -f "$f"
+      ok "removed $f"
+    fi
   done
 }
 
 main() {
-  printf "\n${C_BOLD}aporia${C_RESET} ${C_DIM}uninstaller${C_RESET}\n"
+  printf "\n%baporia%b %buninstaller%b\n" "${C_BOLD}" "${C_RESET}" "${C_DIM}" "${C_RESET}"
   remove_theme
   restore_zshrc
   remove_leftovers
-  printf "\n${C_GREEN}${C_BOLD}done.${C_RESET} ${C_DIM}reload: exec zsh${C_RESET}\n\n"
+  printf "\n%b%bdone.%b %breload: exec zsh%b\n" "${C_GREEN}" "${C_BOLD}" "${C_RESET}" "${C_DIM}" "${C_RESET}"
 }
 
 main "$@"
