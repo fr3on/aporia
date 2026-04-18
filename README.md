@@ -3,7 +3,7 @@
   <p><b>Deep Blue · Context-Aware · High-Performance</b></p>
   <p>A professional Zsh theme designed for developers who demand a state-of-the-art terminal environment.</p>
 
-  <a href="https://github.com/fr3on/aporia/releases/tag/v1.0.1"><img src="https://img.shields.io/badge/version-1.0.1-blue.svg" alt="v1.0.1"></a>
+  <a href="https://github.com/fr3on/aporia/releases/tag/1.0.0"><img src="https://img.shields.io/badge/version-1.0.0-blue.svg" alt="1.0.0"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="MIT License"></a>
   <img src="screenshots/preview.png" width="800" alt="Aporia Theme Preview">
 </div>
