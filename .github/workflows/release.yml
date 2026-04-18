@@ -29,17 +29,30 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   homebrew:
-    name: Sync Homebrew Tap
+    name: Update Local Formula
     needs: release
     runs-on: ubuntu-latest
     steps:
-      - name: Bump Homebrew formula
-        uses: mislav/bump-homebrew-formula-action@v3
+      - name: Checkout Code
+        uses: actions/checkout@v4
         with:
-          homebrew-tap: fr3on/homebrew-aporia
-          formula-name: aporia
-          # We use a custom PAT to allow pushing to the tap repo
-          # and triggering follow-up workflows if needed.
-          commit-message: "chore: update Aporia to ${{ github.ref_name }}"
-        env:
-          COMMITTER_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Formula
+        run: |
+          NEW_URL="https://github.com/fr3on/aporia/archive/refs/tags/${{ github.ref_name }}.tar.gz"
+          # Download and get SHA
+          curl -L "$NEW_URL" -o aporia.tar.gz
+          NEW_SHA=$(shasum -a 256 aporia.tar.gz | awk '{print $1}')
+          
+          # Update the Ruby file
+          sed -i "s|url \".*\"|url \"$NEW_URL\"|g" Formula/aporia.rb
+          sed -i "s|sha256 \".*\"|sha256 \"$NEW_SHA\"|g" Formula/aporia.rb
+          
+          rm aporia.tar.gz
+          
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/aporia.rb
+          git commit -m "chore: update brew formula to ${{ github.ref_name }}" || echo "No changes"
+          git push origin main
