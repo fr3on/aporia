@@ -9,7 +9,17 @@
 
 # Guard: Ensure we are running in Zsh
 if [[ -z $ZSH_VERSION ]]; then
-  echo "[aporia] Error: This theme requires Zsh. Run 'zsh' to switch shells." >&2
+  _sh="unknown"
+  [[ -n $BASH_VERSION ]] && _sh="Bash"
+  printf "\033[1;31m[aporia] Error: This theme requires Zsh but you are in $_sh.\033[0m\n" >&2
+  
+  # Auto-switch for interactive shells if zsh is available
+  if [[ $- == *i* ]] && command -v zsh >/dev/null; then
+    printf "         \033[1;33mSwitching to Zsh...\033[0m\n" >&2
+    exec zsh
+  fi
+
+  printf "         Run \033[1;32mzsh\033[0m to switch shells.\n" >&2
   return 1 2>/dev/null || exit 1
 fi
 
@@ -24,26 +34,115 @@ _ap_is_linux() { [[ $(uname -s) == "Linux"  ]]; }
 # Distro Detection logic
 _ap_get_os_icon() {
   if _ap_is_macos; then
-    echo "" # Apple Logo
+    echo ""   # Apple
     return
   fi
 
   if [[ -f /etc/os-release ]]; then
-    local id=$(grep -E "^ID=" /etc/os-release | cut -d= -f2 | tr -d '"')
+    local id=$(grep -E "^ID=" /etc/os-release | cut -d= -f2 | tr -d '"' | tr '[:upper:]' '[:lower:]')
     case "$id" in
-      debian)  echo "󰣚" ;;
-      ubuntu)  echo "󰕈" ;;
-      arch)    echo "󰣇" ;;
-      fedora)  echo "󰣛" ;;
-      centos)  echo "󰣙" ;;
-      alpine)  echo "󰣗" ;;
-      kali)    echo "󰣘" ;;
-      raspbian) echo "󰐕" ;;
-      manjaro)  echo "󱘊" ;;
-      *)        echo "󰌽" ;; # Generic Linux
+      # ── Debian family ───────────────────────────────────────
+      debian)        echo "󰣚" ;;
+      ubuntu)        echo "󰕈" ;;
+      linuxmint)     echo "󰣭" ;;
+      pop)           echo "󰣛" ;;   # Pop!_OS
+      elementary)    echo "󰣫" ;;
+      zorin)         echo "󰣼" ;;
+      kali)          echo "󰣘" ;;
+      parrot)        echo "󰓅" ;;
+      mx)            echo "󰵆" ;;   # MX Linux
+      deepin)        echo "󰣰" ;;
+      raspbian)      echo "󰐕" ;;
+
+      # ── Red Hat family ──────────────────────────────────────
+      fedora)        echo "󰣛" ;;
+      rhel)          echo "󰮤" ;;   # Red Hat Enterprise
+      centos)        echo "󰣙" ;;
+      rocky)         echo "󰺆" ;;
+      alma|almalinux) echo "󰮤" ;;
+      ol|oraclelinux) echo "󰮤" ;;
+      scientific)    echo "󰮤" ;;
+
+      # ── Arch family ─────────────────────────────────────────
+      arch)          echo "󰣇" ;;
+      manjaro)       echo "󱘊" ;;
+      endeavouros)   echo "󰣙" ;;
+      garuda)        echo "󰛓" ;;
+      artix)         echo "󰣇" ;;
+      blackarch)     echo "󰣇" ;;
+      parabola)      echo "󰣇" ;;
+      hyperbola)     echo "󰣇" ;;
+
+      # ── SUSE family ─────────────────────────────────────────
+      opensuse*|opensuse-leap|opensuse-tumbleweed) echo "󰗊" ;;
+      sles)          echo "󰗊" ;;
+
+      # ── Gentoo family ───────────────────────────────────────
+      gentoo)        echo "󰣨" ;;
+      funtoo)        echo "󰣨" ;;
+      calculate)     echo "󰣨" ;;
+
+      # ── Slackware family ────────────────────────────────────
+      slackware)     echo "󰓽" ;;
+
+      # ── Alpine & minimal ────────────────────────────────────
+      alpine)        echo "󰣗" ;;
+      void)          echo "󰣵" ;;
+      musl)          echo "󰌽" ;;
+      buildroot)     echo "󰌽" ;;
+
+      # ── Nix ─────────────────────────────────────────────────
+      nixos)         echo "󱄅" ;;
+
+      # ── Immutable / atomic ──────────────────────────────────
+      silverblue|kinoite|sericea) echo "󰣛" ;;   # Fedora spins
+      vanillaos)     echo "󰮯" ;;
+      blendos)       echo "󰌽" ;;
+
+      # ── BSD (appears in /etc/os-release on some BSDs) ───────
+      freebsd)       echo "󰻀" ;;
+      openbsd)       echo "󰻀" ;;
+      netbsd)        echo "󰻀" ;;
+      dragonfly)     echo "󰻀" ;;
+      ghostbsd)      echo "󰻀" ;;
+
+      # ── Mobile / embedded ───────────────────────────────────
+      android)       echo "󰀲" ;;
+      postmarketos)  echo "󰠓" ;;
+      sailfishos)    echo "󰓅" ;;
+      tizen)         echo "󰌽" ;;
+
+      # ── Other notable ───────────────────────────────────────
+      solus)         echo "󰣼" ;;
+      mageia)        echo "󰣼" ;;
+      pclinuxos)     echo "󰣼" ;;
+      rosa)          echo "󰣼" ;;
+      clearlinux*)   echo "󰣼" ;;   # Intel Clear Linux
+      chromeos)      echo "󰊯" ;;
+      steamos)       echo "󰓓" ;;   # Steam Deck
+      tails)         echo "󰒄" ;;
+      whonix)        echo "󰒄" ;;
+      qubes)         echo "󰒄" ;;
+
+      # ── WSL detection ───────────────────────────────────────
+      *)
+        # Check if running inside WSL even if distro is unknown
+        if [[ -n $WSL_DISTRO_NAME || -f /proc/sys/fs/binfmt_misc/WSLInterop ]]; then
+          echo "󰍲"   # Windows logo for WSL
+        else
+          echo "󰌽"   # Generic Linux penguin
+        fi
+        ;;
     esac
   else
-    echo "󰌽"
+    # No /etc/os-release — check uname for BSDs
+    local kernel=$(uname -s)
+    case "$kernel" in
+      FreeBSD|OpenBSD|NetBSD|DragonFly) echo "󰻀" ;;
+      SunOS)  echo "󰖣" ;;
+      AIX)    echo "󰌽" ;;
+      *)      echo "󰌽" ;;
+    esac
   fi
 }
 
@@ -67,15 +166,15 @@ AP_SHOW_EXIT_CODE=${AP_SHOW_EXIT_CODE:-1}   # non-zero exit codes
 AP_SHOW_TIME=${AP_SHOW_TIME:-1}       # clock on right
 AP_DIR_DEPTH=${AP_DIR_DEPTH:-3}       # how many path segments to show
 
-# [3] OS-Specific Branding
-_AP_ICO_OS=$(_ap_get_os_icon)
-
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-#  NERD FONT GLYPHS
-#  Fallback to ASCII if AP_ASCII_FALLBACK=1 or locale is not UTF-8
+#  GLYPHS & ICONOGRAPHY
+#  Tiered support: Nerd Font > Standard Unicode > ASCII
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AP_USE_NERD_FONT=${AP_USE_NERD_FONT:-1}   # Toggle rich Nerd Font icons
+AP_ASCII_FALLBACK=${AP_ASCII_FALLBACK:-0} # Force text-only mode
 
-if [[ ${AP_ASCII_FALLBACK:-0} -eq 1 ]] || ! _ap_is_utf8; then
+if [[ $AP_ASCII_FALLBACK -eq 1 ]] || ! _ap_is_utf8; then
+  # Tier 3: ASCII Fallback
   _AP_SEP_L=">"
   _AP_SEP_R="<"
   _AP_ICO_GIT="git"
@@ -88,32 +187,67 @@ if [[ ${AP_ASCII_FALLBACK:-0} -eq 1 ]] || ! _ap_is_utf8; then
   _AP_ICO_PY="py"
   _AP_ICO_NODE="js"
   _AP_ICO_RUST="rs"
+  _AP_ICO_GO="go"
   _AP_ICO_DIRTY="*"
   _AP_ICO_AHEAD="^"
   _AP_ICO_BEHIND="v"
   _AP_ICO_PROMPT=">"
+elif [[ $AP_USE_NERD_FONT -eq 0 ]]; then
+  # Tier 2: Standard Unicode (Compatibility Mode)
+  _AP_SEP_L="❯"
+  _AP_SEP_R="❮"
+  _AP_ICO_GIT="±"
+  _AP_ICO_SSH="⇄"
+  _AP_ICO_DIR="»"
+  _AP_ICO_OK="✓"
+  _AP_ICO_ERR="✘"
+  _AP_ICO_TIME="at"
+  _AP_ICO_EXEC="+"
+  _AP_ICO_PY="py"
+  _AP_ICO_NODE="js"
+  _AP_ICO_RUST="rs"
+  _AP_ICO_GO="go"
+  _AP_ICO_PHP="php"
+  _AP_ICO_RUBY="rb"
+  _AP_ICO_JAVA="java"
+  _AP_ICO_CPP="c++"
+  _AP_ICO_DIRTY="*"
+  _AP_ICO_AHEAD="↑"
+  _AP_ICO_BEHIND="↓"
+  _AP_ICO_PROMPT="❯"
 else
-  _AP_SEP_L="❯"        # Minimalist Slant
-  _AP_SEP_R="❮"        # Minimalist Slant
-  _AP_ICO_GIT="⎇"      # Universal Git
-  _AP_ICO_SSH="⇄"      # Universal SSH
-  _AP_ICO_DIR="›"      # Directory arrow
-  _AP_ICO_OK="✓"       # Success
-  _AP_ICO_ERR="✘"      # Error
-  _AP_ICO_TIME="◷"     # Clock
-  _AP_ICO_EXEC="󱎫"     # Stopwatch (Nerd Font)
-  _AP_ICO_PY=""      # Python
-  _AP_ICO_NODE=""    # Node
-  _AP_ICO_RUST=""    # Rust
-  _AP_ICO_GO="󰟓"      # Go
-  _AP_ICO_RUBY=""    # Ruby
-  _AP_ICO_PHP="󰌟"      # PHP
-  _AP_ICO_JAVA=""    # Java
-  _AP_ICO_CPP=""     # C++
-  _AP_ICO_DIRTY="󰝥"   # Dirty (dot)
-  _AP_ICO_AHEAD="↑"    # Ahead
-  _AP_ICO_BEHIND="↓"   # Behind
-  _AP_ICO_PROMPT="❯"   # Prompt char
+  # Tier 1: Nerd Font (Rich Mode)
+  _AP_SEP_L="❯"
+  _AP_SEP_R="❮"
+  _AP_ICO_GIT="⎇"
+  _AP_ICO_SSH="⇄"
+  _AP_ICO_DIR="›"
+  _AP_ICO_OK="✓"
+  _AP_ICO_ERR="✘"
+  _AP_ICO_TIME="◷"
+  _AP_ICO_EXEC="󱎫"
+  _AP_ICO_PY=""
+  _AP_ICO_NODE=""
+  _AP_ICO_RUST=""
+  _AP_ICO_GO="󰟓"
+  _AP_ICO_RUBY=""
+  _AP_ICO_PHP="󰌟"
+  _AP_ICO_JAVA=""
+  _AP_ICO_CPP=""
+  _AP_ICO_DIRTY="󰝥"
+  _AP_ICO_AHEAD="↑"
+  _AP_ICO_BEHIND="↓"
+  _AP_ICO_PROMPT="❯"
+fi
+
+# [3] OS-Specific Branding
+_AP_ICO_OS=$(_ap_get_os_icon)
+
+# Override OS icon in compatibility modes
+if [[ $AP_ASCII_FALLBACK -eq 1 ]] || ! _ap_is_utf8; then
+  _AP_ICO_OS="L"
+elif [[ $AP_USE_NERD_FONT -eq 0 ]]; then
+  if _ap_is_macos; then _AP_ICO_OS=""; else _AP_ICO_OS="L"; fi
 fi
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

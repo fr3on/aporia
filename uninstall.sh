@@ -41,6 +41,21 @@ restore_zshrc() {
   ok "$HOME/.zshrc cleaned"
 }
 
+restore_bashrc() {
+  hdr "Restoring ~/.bashrc"
+  BASHRC="$HOME/.bashrc"
+  [ -f "$BASHRC" ] || return 0
+
+  BRIDGE_MARK="# aporia-bash-bridge"
+  if grep -qF "$BRIDGE_MARK" "$BASHRC" 2>/dev/null; then
+    # Safely remove the 4-line bridge block
+    tmp=$(mktemp)
+    sed "/$BRIDGE_MARK/,+3d" "$BASHRC" > "$tmp"
+    mv "$tmp" "$BASHRC"
+    ok "Bash bridge removed"
+  fi
+}
+
 remove_leftovers() {
   hdr "Cleaning up"
   for f in "$HOME/.aporia-uninstall.sh" "${ZSHRC}.aporia.bak"; do
@@ -55,6 +70,7 @@ main() {
   printf "\n%baporia%b %buninstaller%b\n" "${C_BOLD}" "${C_RESET}" "${C_DIM}" "${C_RESET}"
   remove_theme
   restore_zshrc
+  restore_bashrc
   remove_leftovers
   printf "\n%b%bdone.%b %breload: exec zsh%b\n" "${C_GREEN}" "${C_BOLD}" "${C_RESET}" "${C_DIM}" "${C_RESET}"
 }

@@ -47,8 +47,30 @@ check_shell() {
   esac
 
   if [ "${SHELL##*/}" != "zsh" ]; then
-    warn "Currently using ${SHELL##*/}. You will need to switch to zsh to see the theme."
-    printf "  Run: %bchsh -s \$(which zsh)%b then log out and back in.\n" "${C_BOLD}" "${C_RESET}"
+    warn "Currently using ${SHELL##*/}. Aporia requires zsh."
+  fi
+}
+
+# ─── SWITCH SHELL ────────────────────────────────────────────────────────────
+
+switch_shell() {
+  hdr "Setting default shell"
+  if [ "$(basename "$SHELL")" = "zsh" ]; then
+    ok "already using zsh"
+    return
+  fi
+
+  printf "  Attempting to set zsh as default... "
+  if command -v chsh >/dev/null 2>&1; then
+    # Try non-interactively first, then suggest manual if it fails
+    if chsh -s "$(command -v zsh)" "$USER" >/dev/null 2>&1 || chsh -s "$(command -v zsh)" >/dev/null 2>&1; then
+      ok "done"
+    else
+      warn "failed (requires manual intervention)"
+      printf "  Please run: %bchsh -s \$(which zsh)%b\n" "${C_BOLD}" "${C_RESET}"
+    fi
+  else
+    warn "chsh not found"
   fi
 }
 
@@ -92,7 +114,23 @@ patch_zshrc() {
   fi
 }
 
-# ─── INSTALL UNINSTALLER ─────────────────────────────────────────────────────
+# ─── PATCH .BASHRC (Fallback Bridge) ─────────────────────────────────────────
+
+patch_bashrc() {
+  hdr "Adding Bash fallback bridge"
+  BASHRC="$HOME/.bashrc"
+  
+  # Ensure file exists
+  [ -f "$BASHRC" ] || touch "$BASHRC"
+
+  BRIDGE_MARK="# aporia-bash-bridge"
+  if grep -qF "$BRIDGE_MARK" "$BASHRC" 2>/dev/null; then
+    ok "bridge already exists"
+  else
+    printf '\n%s\nif [[ $- == *i* ]] && command -v zsh >/dev/null 2>&1; then\n  exec zsh\nfi\n' "$BRIDGE_MARK" >> "$BASHRC"
+    ok "auto-switch added to ~/.bashrc"
+  fi
+}
 
 install_uninstaller() {
   if [ -f "./uninstall.sh" ]; then
@@ -100,6 +138,34 @@ install_uninstaller() {
     chmod +x "$HOME/.aporia-uninstall.sh"
     ok "uninstaller → ~/.aporia-uninstall.sh"
   fi
+}
+
+# ─── CONFIGURE FONTS ─────────────────────────────────────────────────────────
+
+configure_fonts() {
+  hdr "Font Configuration"
+  # Default to Nerd Font if not interactive
+  [ -t 0 ] || return 0
+
+  printf "  Do you use a Nerd Font (e.g. JetBrainsMono, FiraCode)? [Y/n] "
+  read -r opt
+  case "$opt" in
+    [nN]*)
+      if grep -q "export AP_USE_NERD_FONT=" "$ZSHRC" 2>/dev/null; then
+        sed -i.tmp 's/export AP_USE_NERD_FONT=.*/export AP_USE_NERD_FONT=0/' "$ZSHRC" && rm -f "${ZSHRC}.tmp"
+      else
+        printf '\n# Aporia: Compatibility Mode (Standard Unicode)\nexport AP_USE_NERD_FONT=0\n' >> "$ZSHRC"
+      fi
+      ok "Compatibility mode enabled"
+      ;;
+    *)
+      # Ensure it is set to 1 if we're re-installing
+      if grep -q "export AP_USE_NERD_FONT=" "$ZSHRC" 2>/dev/null; then
+        sed -i.tmp 's/export AP_USE_NERD_FONT=.*/export AP_USE_NERD_FONT=1/' "$ZSHRC" && rm -f "${ZSHRC}.tmp"
+      fi
+      ok "Rich mode enabled (Nerd Font)"
+      ;;
+  esac
 }
 # ─── SETUP PLUGINS (Essentials) ──────────────────────────────────────────────
 
@@ -140,8 +206,11 @@ main() {
   install_theme
   setup_plugins
   patch_zshrc
+  patch_bashrc
+  configure_fonts
+  switch_shell
   install_uninstaller
-  printf "\n%b%bdone.%b %breload: source ~/.zshrc%b\n\n" "${C_GREEN}" "${C_BOLD}" "${C_RESET}" "${C_DIM}" "${C_RESET}"
+  printf "\n%b%bdone.%b %breload: source ~/.zshrc or log in again%b\n\n" "${C_GREEN}" "${C_BOLD}" "${C_RESET}" "${C_DIM}" "${C_RESET}"
 }
 
 main "$@"
