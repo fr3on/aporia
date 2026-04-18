@@ -7,6 +7,12 @@
 # ║    source ~/.aporia.zsh-theme   (add to ~/.zshrc)                 ║
 # ╚═══════════════════════════════════════════════════════════════════╝
 
+# Guard: Ensure we are running in Zsh
+if [[ -z $ZSH_VERSION ]]; then
+  echo "[aporia] Error: This theme requires Zsh. Run 'zsh' to switch shells." >&2
+  return 1 2>/dev/null || exit 1
+fi
+
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  INTERNAL UTILS
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
