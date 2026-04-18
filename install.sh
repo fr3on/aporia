@@ -98,6 +98,9 @@ install_uninstaller() {
   if [ -f "./uninstall.sh" ]; then
     cp "./uninstall.sh" "$HOME/.aporia-uninstall.sh"
     chmod +x "$HOME/.aporia-uninstall.sh"
+    ok "uninstaller → ~/.aporia-uninstall.sh"
+  fi
+}
 # ─── SETUP PLUGINS (Essentials) ──────────────────────────────────────────────
 
 setup_plugins() {
