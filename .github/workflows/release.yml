@@ -36,7 +36,7 @@ jobs:
       - name: Bump Homebrew formula
         uses: mislav/bump-homebrew-formula-action@v3
         with:
-          tap: fr3on/homebrew-aporia
+          homebrew-tap: fr3on/homebrew-aporia
           formula-name: aporia
           # We use a custom PAT to allow pushing to the tap repo
           # and triggering follow-up workflows if needed.
