@@ -17,6 +17,10 @@ fi
 #  INTERNAL UTILS
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+# Platform detection
+_ap_is_macos() { [[ $(uname -s) == "Darwin" ]]; }
+_ap_is_linux() { [[ $(uname -s) == "Linux"  ]]; }
+
 # Check if current locale supports UTF-8
 _ap_is_utf8() {
   case "${LANG:-}${LC_ALL:-}${LC_CTYPE:-}" in
@@ -36,6 +40,13 @@ AP_EXEC_TIME_THRESHOLD=${AP_EXEC_TIME_THRESHOLD:-2}   # seconds
 AP_SHOW_EXIT_CODE=${AP_SHOW_EXIT_CODE:-1}   # non-zero exit codes
 AP_SHOW_TIME=${AP_SHOW_TIME:-1}       # clock on right
 AP_DIR_DEPTH=${AP_DIR_DEPTH:-3}       # how many path segments to show
+
+# [3] OS-Specific Branding
+if _ap_is_macos; then
+  _AP_ICO_OS=""  # Apple Logo
+else
+  _AP_ICO_OS="🐧"  # Linux Penguin (Tux)
+fi
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  NERD FONT GLYPHS
@@ -60,22 +71,22 @@ if [[ ${AP_ASCII_FALLBACK:-0} -eq 1 ]] || ! _ap_is_utf8; then
   _AP_ICO_BEHIND="v"
   _AP_ICO_PROMPT=">"
 else
-  _AP_SEP_L=""        # left segment terminator (Flame)
-  _AP_SEP_R=""        # right segment terminator (Flame)
-  _AP_ICO_GIT=""      # git branch icon
-  _AP_ICO_SSH="󰣀"      # SSH icon
-  _AP_ICO_DIR=""      # directory icon
-  _AP_ICO_OK="󰄬"       # success icon
-  _AP_ICO_ERR="󰅖"      # error icon
-  _AP_ICO_TIME="󱑂"     # clock icon
-  _AP_ICO_EXEC="󱎫"     # execution time icon
-  _AP_ICO_PY="󰌠"      # python icon
-  _AP_ICO_NODE="󰎙"     # node icon
-  _AP_ICO_RUST="󱘗"     # rust icon
-  _AP_ICO_DIRTY="󰝥"    # dirty indicator
-  _AP_ICO_AHEAD="󰶣"    # ahead indicator
-  _AP_ICO_BEHIND="󰶡"   # behind indicator
-  _AP_ICO_PROMPT="❯"   # prompt char
+  _AP_SEP_L="❯"        # Minimalist Slant
+  _AP_SEP_R="❮"        # Minimalist Slant
+  _AP_ICO_GIT="⎇"      # Universal Git
+  _AP_ICO_SSH="⇄"      # Universal SSH
+  _AP_ICO_DIR="›"      # Directory arrow
+  _AP_ICO_OK="✓"       # Success
+  _AP_ICO_ERR="✘"      # Error
+  _AP_ICO_TIME="◷"     # Clock
+  _AP_ICO_EXEC="⌛"     # Hourglass
+  _AP_ICO_PY="py"      # Python
+  _AP_ICO_NODE="js"    # Node
+  _AP_ICO_RUST="rs"    # Rust
+  _AP_ICO_DIRTY="●"    # Dirty
+  _AP_ICO_AHEAD="↑"    # Ahead
+  _AP_ICO_BEHIND="↓"   # Behind
+  _AP_ICO_PROMPT="❯"   # Prompt char
 fi
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -100,10 +111,9 @@ AP_C_GRAY=${AP_C_GRAY:-242}       # mid gray text   #6c6c6c
 #  ADAPTIVE CONTEXT (Root / Locale)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-# [1] Root User Adaptivity
+# [1] Root User Adaptivity (Safety Mode)
 if [[ $UID -eq 0 ]]; then
-  AP_C_BLUE=$AP_C_RED       # highlight directory in red for danger
-  _AP_ICO_PROMPT="⚡"        # warning flash for root
+  _AP_ICO_PROMPT="${_AP_ICO_OS}"  # use OS branding as prompt for root
 fi
 
 # [2] Auto-Locale Fix
@@ -263,11 +273,6 @@ _ap_calc_exec_time() {
   _ap_last_exec_time="${_AP_ICO_EXEC} $out"
 }
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-#  PLATFORM DETECTION
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-_ap_is_macos() { [[ $(uname -s) == "Darwin" ]]; }
-_ap_is_linux() { [[ $(uname -s) == "Linux"  ]]; }
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  MAIN PROMPT BUILDER  (runs every precmd)
@@ -283,9 +288,12 @@ _ap_build_prompt() {
 
   # [1] SSH context — only when connected over SSH
   if (( AP_SHOW_SSH )) && [[ -n $SSH_CONNECTION || -n $SSH_CLIENT ]]; then
-    LEFT+="%K{$AP_C_PURPLE}%F{$AP_C_WHITE} ${_AP_ICO_SSH} %n@%m "
+    LEFT+="%K{$AP_C_PURPLE}%F{$AP_C_WHITE} ${_AP_ICO_OS} %n@%m "
     LEFT+="%F{$AP_C_PURPLE}%K{$AP_C_BG2}${_AP_SEP_L}"
     prev_bg=$AP_C_BG2
+  else
+    # Show OS branding icon locally too
+    LEFT+="%F{$AP_C_GRAY}${_AP_ICO_OS} %f"
   fi
 
   # [2] Directory
