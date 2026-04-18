@@ -1,19 +1,19 @@
 <div align="center">
-  <img src="screenshots/preview.png" width="800" alt="Aporia Theme Preview">
   <h1>🌀 Aporia</h1>
   <p><b>Deep Blue · Context-Aware · High-Performance</b></p>
   <p>A professional Zsh theme designed for developers who demand a state-of-the-art terminal environment.</p>
 
   <a href="https://github.com/fr3on/aporia/releases/tag/v1.0.1"><img src="https://img.shields.io/badge/version-1.0.1-blue.svg" alt="v1.0.1"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="MIT License"></a>
+  <img src="screenshots/preview.png" width="800" alt="Aporia Theme Preview">
 </div>
 
 ---
 
-## 💎 The Aporia Philosophy
+## The Aporia Philosophy
 Aporia isn't just a prompt; it's a **context-aware environment**. It adapts dynamically to your project, your privileges, and your operating system—staying minimal when you're busy and providing deep insights when you need them.
 
-### 🌟 Core Features
+### Core Features
 *   **Adaptive Branding**: Official high-fidelity icons for macOS, Debian, Ubuntu, Arch, and more.
 *   **Polyglot Awareness**: Real-time version detection for **Go, Rust, Python, Node, Ruby, PHP, Java, and C++**.
 *   **Root Safety**: Subtle OS-native alerts when running with high privileges.
@@ -23,7 +23,7 @@ Aporia isn't just a prompt; it's a **context-aware environment**. It adapts dyna
 
 ---
 
-## 🚀 Installation
+## Installation
 
 ### 1-Click Install (Universal)
 The fastest way to get started on any system:
@@ -49,7 +49,7 @@ brew install aporia
 
 ---
 
-## 🪄 Aporia Essentials
+## Aporia Essentials
 To enable the full "Terminal OS" experience, we recommend installing the **Essentials Bundle** during setup. This activates:
 *   **zsh-autosuggestions**: Predictions based on your history.
 *   **zsh-syntax-highlighting**: Commands turn Green/Red as you type.
@@ -59,7 +59,7 @@ To enable the full "Terminal OS" experience, we recommend installing the **Essen
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 Override these variables in your `~/.zshrc` *before* the theme is sourced to customize your experience:
 
 | Variable | Default | Description |
@@ -74,7 +74,7 @@ Override these variables in your `~/.zshrc` *before* the theme is sourced to cus
 
 ---
 
-## 🛠 Troubleshooting
+## Troubleshooting
 
 > [!IMPORTANT]
 > **Icons appearing as squares?**
@@ -84,5 +84,5 @@ Override these variables in your `~/.zshrc` *before* the theme is sourced to cus
 
 ---
 
-## 📄 License
+## License
 MIT © **Ahmed Mardi (fr3on)**
