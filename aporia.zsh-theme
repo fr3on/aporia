@@ -90,6 +90,21 @@ AP_C_PURPLE=${AP_C_PURPLE:-135}   # purple          #af5fff
 AP_C_CYAN=${AP_C_CYAN:-51}        # cyan            #00ffff
 AP_C_GRAY=${AP_C_GRAY:-242}       # mid gray text   #6c6c6c
 
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  ADAPTIVE CONTEXT (Root / Locale)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# [1] Root User Adaptivity
+if [[ $UID -eq 0 ]]; then
+  AP_C_BLUE=$AP_C_RED       # highlight directory in red for danger
+  _AP_ICO_PROMPT="⚡"        # warning flash for root
+fi
+
+# [2] Auto-Locale Fix
+if ! _ap_is_utf8; then
+  export LANG="en_US.UTF-8"
+  export LC_ALL="en_US.UTF-8"
+fi
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  LOCALE WARNING
@@ -294,25 +309,27 @@ _ap_build_prompt() {
   fi
 
   # ── RIGHT SIDE ──────────────────────────────────────────────────
+  local width=$COLUMNS
+  [[ -z $width || $width -eq 0 ]] && width=80  # fallback
 
   # [1] Exit code (non-zero only)
   if (( AP_SHOW_EXIT_CODE && last_exit != 0 )); then
     RIGHT+="%F{$AP_C_RED}${_AP_ICO_ERR} $last_exit  %f"
   fi
 
-  # [2] Execution time
-  if (( AP_SHOW_EXEC_TIME )) && [[ -n $_ap_last_exec_time ]]; then
+  # [2] Execution time (hide if < 60 chars)
+  if (( AP_SHOW_EXEC_TIME )) && [[ -n $_ap_last_exec_time ]] && (( width > 60 )); then
     RIGHT+="%F{$AP_C_YELLOW}${_ap_last_exec_time}  %f"
   fi
 
-  # [3] Language versions
-  if (( AP_SHOW_LANGS )); then
+  # [3] Language versions (hide if < 100 chars)
+  if (( AP_SHOW_LANGS )) && (( width > 100 )); then
     local langs=$(_ap_lang_info)
     [[ -n $langs ]] && RIGHT+="$langs  "
   fi
 
-  # [4] Clock
-  if (( AP_SHOW_TIME )); then
+  # [4] Clock (hide if < 80 chars)
+  if (( AP_SHOW_TIME )) && (( width > 80 )); then
     RIGHT+="%F{$AP_C_GRAY}${_AP_ICO_TIME} %D{%H:%M}%f%k%b"
   fi
 

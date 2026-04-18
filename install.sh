@@ -21,8 +21,16 @@ hdr()  { printf "\n${C_BOLD}%s${C_RESET}\n" "$1"; }
 
 check_shell() {
   hdr "Checking environment"
-  [ "${SHELL##*/}" = "zsh" ] || fail "zsh required (current: ${SHELL##*/}). Run: chsh -s \$(which zsh)"
-  ok "shell: zsh"
+  
+  if ! command -v zsh >/dev/null 2>&1; then
+    warn "zsh not found"
+    printf "  To install zsh:\n"
+    printf "    macOS:  brew install zsh\n"
+    printf "    Ubuntu: sudo apt update && sudo apt install zsh\n"
+    printf "    CentOS: sudo yum install zsh\n\n"
+    fail "zsh is required to use this theme."
+  fi
+  ok "zsh is installed"
 
   ZSH_VER=$(zsh --version | awk '{print $2}')
   MAJOR=$(echo "$ZSH_VER" | cut -d. -f1)
@@ -31,12 +39,17 @@ check_shell() {
     || fail "zsh 5.3+ required (found $ZSH_VER)"
   [ "$MAJOR" -gt 5 ] || [ "$MINOR" -ge 8 ] \
     || warn "zsh $ZSH_VER: exec time less precise (no EPOCHSECONDS)"
-  ok "version: $ZSH_VER"
+  ok "zsh version: $ZSH_VER"
 
   case "${LANG:-}" in
     *UTF-8*|*utf8*) ok "locale: ${LANG}" ;;
-    *) warn "non-UTF-8 locale — add: export LANG=en_US.UTF-8" ;;
+    *) warn "non-UTF-8 locale — suggest: export LANG=en_US.UTF-8" ;;
   esac
+
+  if [ "${SHELL##*/}" != "zsh" ]; then
+    warn "Currently using ${SHELL##*/}. You will need to switch to zsh to see the theme."
+    printf "  Run: ${C_BOLD}chsh -s \$(which zsh)${C_RESET} then log out and back in.\n"
+  fi
 }
 
 # ─── INSTALL THEME ───────────────────────────────────────────────────────────
