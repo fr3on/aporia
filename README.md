@@ -16,30 +16,34 @@
 - ASCII fallback mode (no Nerd Font needed)
 - macOS + Linux · zsh 5.3+
 
-## Install
+## 🚀 Installation
 
-### One-liner
+### 1-Click Install (Universal)
 ```bash
 curl -fsSL https://raw.githubusercontent.com/fr3on/aporia/main/install.sh | bash
 ```
 
-### Manual
+### Homebrew (macOS)
 ```bash
-curl -fsSL https://raw.githubusercontent.com/fr3on/aporia/main/aporia.zsh-theme \
-  -o ~/.aporia.zsh-theme
-echo 'source ~/.aporia.zsh-theme' >> ~/.zshrc
-source ~/.zshrc
+brew tap fr3on/aporia
+brew install aporia
 ```
+*Add `source $(brew --prefix)/share/aporia/aporia.zsh-theme` to your `.zshrc`.*
 
-### oh-my-zsh
-1. Clone the repo:
-   ```bash
-   git clone https://github.com/fr3on/aporia \
-     ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/themes/aporia
-   ```
-2. Set `ZSH_THEME="fr3on/aporia"` in your `~/.zshrc`.
+### Plugin Managers
+| Manager | Command |
+| :--- | :--- |
+| **Oh My Zsh** | `git clone https://github.com/fr3on/aporia $ZSH_CUSTOM/themes/aporia` |
+| **Zinit** | `zinit ice pick"aporia.zsh-theme"; zinit light fr3on/aporia` |
+| **Antigen** | `antigen theme fr3on/aporia` |
+| **Zplug** | `zplug "fr3on/aporia", as:theme` |
 
-## Configuration
+### Manual
+1. Download `aporia.zsh-theme` to your home folder.
+2. Add `source ~/.aporia.zsh-theme` to your `.zshrc`.
+3. Reload: `source ~/.zshrc`
+
+## ⚙️ Configuration
 
 You can override these variables in your `~/.zshrc` *before* sourcing the theme:
 
@@ -61,17 +65,14 @@ Set `AP_ASCII_FALLBACK=1` for terminals without Nerd Fonts.
 
 ## Troubleshooting Icons
 If you see broken squares or strange characters instead of icons:
-1. **Locale**: Ensure your shell uses a UTF-8 locale. Run `locale` and check that `LANG="en_US.UTF-8"`. If not, add `export LANG=en_US.UTF-8` to your `~/.zshrc`.
-2. **Terminal Font**: Ensure you have selected a **Nerd Font** in your terminal's settings (e.g., iTerm2 > Profiles > Text > Font).
-3. **Fallback**: If you cannot use Nerd Fonts, enable ASCII mode in `~/.zshrc`:
-   ```zsh
-   AP_ASCII_FALLBACK=1
-   ```
+1. **Locale**: Ensure your shell uses a UTF-8 locale. Run `locale` and check that `LANG="en_US.UTF-8"`.
+2. **Terminal Font**: Ensure you have selected a **Nerd Font** in your terminal's settings.
+3. **Fallback**: If you cannot use Nerd Fonts, enable ASCII mode in `~/.zshrc`: `AP_ASCII_FALLBACK=1`.
 
-## Uninstall
+## 🗑 Uninstall
 ```bash
 bash ~/.aporia-uninstall.sh
 ```
 
-## License
+## 📄 License
 MIT © Ahmed (aporia)
