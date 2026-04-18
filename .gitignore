@@ -1,0 +1,14 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+
+
+# Zsh
+.zsh_history
+*.bak
+*.tmp
+
+# Tests
+/tmp/aporia-test-home

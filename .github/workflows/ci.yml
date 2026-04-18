@@ -1,0 +1,23 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install zsh + shellcheck
+        run: sudo apt-get install -y zsh shellcheck
+      - name: zsh syntax check
+        run: zsh --no-rcs -c 'zsh -n aporia.zsh-theme'
+      - name: shellcheck scripts
+        run: shellcheck install.sh uninstall.sh
+      - name: run tests
+        run: zsh tests/test_segments.zsh && zsh tests/test_compat.zsh
+  lint-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: zsh syntax check
+        run: zsh -n aporia.zsh-theme
+      - name: run tests
+        run: zsh tests/test_segments.zsh
