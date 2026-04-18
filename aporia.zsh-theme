@@ -102,10 +102,15 @@ else
   _AP_ICO_ERR="✘"      # Error
   _AP_ICO_TIME="◷"     # Clock
   _AP_ICO_EXEC="⌛"     # Hourglass
-  _AP_ICO_PY="py"      # Python
-  _AP_ICO_NODE="js"    # Node
-  _AP_ICO_RUST="rs"    # Rust
-  _AP_ICO_DIRTY="●"    # Dirty
+  _AP_ICO_PY=""      # Python
+  _AP_ICO_NODE=""    # Node
+  _AP_ICO_RUST=""    # Rust
+  _AP_ICO_GO="󰟓"      # Go
+  _AP_ICO_RUBY=""    # Ruby
+  _AP_ICO_PHP="󰌟"      # PHP
+  _AP_ICO_JAVA=""    # Java
+  _AP_ICO_CPP=""     # C++
+  _AP_ICO_DIRTY="󰝥"   # Dirty (dot)
   _AP_ICO_AHEAD="↑"    # Ahead
   _AP_ICO_BEHIND="↓"   # Behind
   _AP_ICO_PROMPT="❯"   # Prompt char
@@ -246,6 +251,41 @@ _ap_lang_info() {
     local rv
     rv=$(command rustc --version 2>/dev/null | awk '{print $2}') && \
       [[ -n $rv ]] && parts+=("%F{$AP_C_ORANGE}${_AP_ICO_RUST} $rv%f")
+  fi
+
+  # Go — only inside a go project
+  if _ap_find_up "go.mod" "go.sum"; then
+    local gv
+    gv=$(command go version 2>/dev/null | awk '{print $3}') && \
+      [[ -n $gv ]] && parts+=("%F{$AP_C_CYAN}${_AP_ICO_GO} ${gv#go}%f")
+  fi
+
+  # Ruby — only inside a ruby project
+  if _ap_find_up "Gemfile" ".ruby-version"; then
+    local rbv
+    rbv=$(command ruby -e 'puts RUBY_VERSION' 2>/dev/null) && \
+      [[ -n $rbv ]] && parts+=("%F{$AP_C_RED}${_AP_ICO_RUBY} $rbv%f")
+  fi
+
+  # PHP — only inside a php project
+  if _ap_find_up "composer.json" "index.php"; then
+    local phpv
+    phpv=$(command php -v 2>/dev/null | head -n 1 | awk '{print $2}') && \
+      [[ -n $phpv ]] && parts+=("%F{$AP_C_PURPLE}${_AP_ICO_PHP} $phpv%f")
+  fi
+
+  # Java — only inside a java project
+  if _ap_find_up "pom.xml" "build.gradle" ".java-version"; then
+    local jv
+    jv=$(command java -version 2>&1 | head -n 1 | awk -F '"' '{print $2}') && \
+      [[ -n $jv ]] && parts+=("%F{$AP_C_WHITE}${_AP_ICO_JAVA} $jv%f")
+  fi
+
+  # C++ — only inside a C++ project
+  if _ap_find_up "CMakeLists.txt" "Makefile" ".cpp" ".cc"; then
+    local cppv
+    cppv=$(command c++ --version 2>/dev/null | head -n 1 | awk '{print $NF}') && \
+      [[ -n $cppv ]] && parts+=("%F{$AP_C_BLUE}${_AP_ICO_CPP} $cppv%f")
   fi
 
   (( ${#parts[@]} > 0 )) && echo "${(j:  :)parts}"
