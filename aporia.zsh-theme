@@ -451,3 +451,25 @@ if [[ $TERM_PROGRAM == "iTerm.app" ]]; then
   _ap_iterm2_prompt_start() { print -Pn "\e]133;A\a"; }
   _ap_iterm2_preexec()      { print -Pn "\e]133;C\a"; }
 fi
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  APORIA ESSENTIALS (Plugins)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+_ap_load_essentials() {
+  local pdir="$HOME/.aporia/plugins"
+  
+  # 1. Autosuggestions
+  if [[ -f "$pdir/zsh-autosuggestions/zsh-autosuggestions.zsh" ]]; then
+    source "$pdir/zsh-autosuggestions/zsh-autosuggestions.zsh"
+    # subtle gray suggestions matching our theme
+    ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=242"
+  fi
+
+  # 2. Syntax Highlighting (Must be loaded last)
+  if [[ -f "$pdir/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]]; then
+    source "$pdir/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+  fi
+}
+
+# Run essentials loader
+_ap_load_essentials

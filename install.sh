@@ -98,8 +98,35 @@ install_uninstaller() {
   if [ -f "./uninstall.sh" ]; then
     cp "./uninstall.sh" "$HOME/.aporia-uninstall.sh"
     chmod +x "$HOME/.aporia-uninstall.sh"
-    ok "uninstaller → ~/.aporia-uninstall.sh"
+# ─── SETUP PLUGINS (Essentials) ──────────────────────────────────────────────
+
+setup_plugins() {
+  hdr "Aporia Essentials"
+  PLUGIN_DIR="$HOME/.aporia/plugins"
+  mkdir -p "$PLUGIN_DIR"
+
+  # Use a simple yes/no if interactive
+  if [ -t 0 ]; then
+    printf "  Install Aporia Essentials (Autocomplete & Highlighting)? [Y/n] "
+    read -r opt
+    case "$opt" in
+      [nN]*) warn "skipping essentials"; return ;;
+    esac
   fi
+
+  for plugin in "zsh-users/zsh-autosuggestions" "zsh-users/zsh-syntax-highlighting"; do
+    name=$(basename "$plugin")
+    if [ ! -d "$PLUGIN_DIR/$name" ]; then
+      if command -v git >/dev/null 2>&1; then
+        git clone --depth 1 "https://github.com/$plugin" "$PLUGIN_DIR/$name" >/dev/null 2>&1
+        ok "$name installed"
+      else
+        warn "git not found — skipping $name"
+      fi
+    else
+      ok "$name already exists"
+    fi
+  done
 }
 
 # ─── MAIN ────────────────────────────────────────────────────────────────────
@@ -108,6 +135,7 @@ main() {
   printf "\n%baporia%b %bzsh theme · github.com/fr3on/aporia%b\n" "${C_BOLD}" "${C_RESET}" "${C_DIM}" "${C_RESET}"
   check_shell
   install_theme
+  setup_plugins
   patch_zshrc
   install_uninstaller
   printf "\n%b%bdone.%b %breload: source ~/.zshrc%b\n\n" "${C_GREEN}" "${C_BOLD}" "${C_RESET}" "${C_DIM}" "${C_RESET}"

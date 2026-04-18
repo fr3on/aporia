@@ -15,6 +15,7 @@
 - Clock
 - ASCII fallback mode (no Nerd Font needed)
 - macOS + Linux · zsh 5.3+
+- **Aporia Essentials**: Built-in Autocomplete & Syntax Highlighting
 
 ## 🚀 Installation
 
