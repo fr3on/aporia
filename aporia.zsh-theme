@@ -21,6 +21,32 @@ fi
 _ap_is_macos() { [[ $(uname -s) == "Darwin" ]]; }
 _ap_is_linux() { [[ $(uname -s) == "Linux"  ]]; }
 
+# Distro Detection logic
+_ap_get_os_icon() {
+  if _ap_is_macos; then
+    echo "" # Apple Logo
+    return
+  fi
+
+  if [[ -f /etc/os-release ]]; then
+    local id=$(grep -E "^ID=" /etc/os-release | cut -d= -f2 | tr -d '"')
+    case "$id" in
+      debian)  echo "󰣚" ;;
+      ubuntu)  echo "󰕈" ;;
+      arch)    echo "󰣇" ;;
+      fedora)  echo "󰣛" ;;
+      centos)  echo "󰣙" ;;
+      alpine)  echo "󰣗" ;;
+      kali)    echo "󰣘" ;;
+      raspbian) echo "󰐕" ;;
+      manjaro)  echo "󱘊" ;;
+      *)        echo "󰌽" ;; # Generic Linux
+    esac
+  else
+    echo "󰌽"
+  fi
+}
+
 # Check if current locale supports UTF-8
 _ap_is_utf8() {
   case "${LANG:-}${LC_ALL:-}${LC_CTYPE:-}" in
@@ -42,11 +68,7 @@ AP_SHOW_TIME=${AP_SHOW_TIME:-1}       # clock on right
 AP_DIR_DEPTH=${AP_DIR_DEPTH:-3}       # how many path segments to show
 
 # [3] OS-Specific Branding
-if _ap_is_macos; then
-  _AP_ICO_OS=""  # Apple Logo
-else
-  _AP_ICO_OS="🐧"  # Linux Penguin (Tux)
-fi
+_AP_ICO_OS=$(_ap_get_os_icon)
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  NERD FONT GLYPHS
