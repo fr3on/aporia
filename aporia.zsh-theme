@@ -60,21 +60,21 @@ if [[ ${AP_ASCII_FALLBACK:-0} -eq 1 ]] || ! _ap_is_utf8; then
   _AP_ICO_BEHIND="v"
   _AP_ICO_PROMPT=">"
 else
-  _AP_SEP_L="❯"        # left segment terminator
-  _AP_SEP_R="❮"        # right segment terminator
-  _AP_ICO_GIT="⎇"      # git branch
-  _AP_ICO_SSH="⇄"      # SSH
-  _AP_ICO_DIR="›"      # directory
-  _AP_ICO_OK="✓"       # success
-  _AP_ICO_ERR="✘"      # error
-  _AP_ICO_TIME="◷"     # clock
-  _AP_ICO_EXEC="⧗"     # hourglass / exec time
-  _AP_ICO_PY="py"      # python
-  _AP_ICO_NODE="⬡"     # node (hexagon)
-  _AP_ICO_RUST="⚙"     # rust
-  _AP_ICO_DIRTY="●"    # dirty
-  _AP_ICO_AHEAD="↑"    # ahead
-  _AP_ICO_BEHIND="↓"   # behind
+  _AP_SEP_L=""        # left segment terminator (Flame)
+  _AP_SEP_R=""        # right segment terminator (Flame)
+  _AP_ICO_GIT=""      # git branch icon
+  _AP_ICO_SSH="󰣀"      # SSH icon
+  _AP_ICO_DIR=""      # directory icon
+  _AP_ICO_OK="󰄬"       # success icon
+  _AP_ICO_ERR="󰅖"      # error icon
+  _AP_ICO_TIME="󱑂"     # clock icon
+  _AP_ICO_EXEC="󱎫"     # execution time icon
+  _AP_ICO_PY="󰌠"      # python icon
+  _AP_ICO_NODE="󰎙"     # node icon
+  _AP_ICO_RUST="󱘗"     # rust icon
+  _AP_ICO_DIRTY="󰝥"    # dirty indicator
+  _AP_ICO_AHEAD="󰶣"    # ahead indicator
+  _AP_ICO_BEHIND="󰶡"   # behind indicator
   _AP_ICO_PROMPT="❯"   # prompt char
 fi
 
