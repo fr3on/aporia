@@ -1,6 +1,6 @@
 # ╔═══════════════════════════════════════════════════════════════════╗
 # ║  aporia.zsh-theme — Dark Flame Edition                            ║
-# ║  Author : Ahmed (aporia) · github.com/fr3on                       ║
+# ║  Author : Ahmed Mardi · github.com/fr3on                          ║
 # ║  Cross-platform: macOS + Linux · Requires Nerd Font               ║
 # ║                                                                   ║
 # ║  Install:                                                         ║
@@ -22,6 +22,9 @@ if [[ -z $ZSH_VERSION ]]; then
   printf "         Run \033[1;32mzsh\033[0m to switch shells.\n" >&2
   return 1 2>/dev/null || exit 1
 fi
+
+# Aporia Version
+export APORIA_VERSION="1.0.0"
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  INTERNAL UTILS

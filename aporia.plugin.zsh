@@ -283,3 +283,99 @@ _ap_load_essentials() {
 
 _ap_load_essentials
 _ap_load_plugins
+
+# ── Unified Aporia Command ───────────────────────────────────
+
+# Internal: Print feature flag status
+_ap_print_flag() {
+  local label=$1 value=$2
+  local _ap_fstatus="%F{$AP_C_GREEN}on%f"
+  [[ $value -eq 0 ]] && _ap_fstatus="%F{$AP_C_GRAY}off%f"
+  # Using print -P with padding
+  print -P "   %F{$AP_C_WHITE}${(r:12:)label}:%f $_ap_fstatus"
+}
+
+_aporia_help() {
+  print -P "\n %F{$AP_C_BLUE}Usage:%f aporia <command> [args]"
+  print -P "\n %F{$AP_C_BLUE}Commands:%f"
+  print -P "   %F{$AP_C_YELLOW}info%f          Show theme and system status (default)"
+  print -P "   %F{$AP_C_YELLOW}list%f          List all available plugins and their status"
+  print -P "   %F{$AP_C_YELLOW}install <p>%f   Download and install a plugin"
+  print -P "   %F{$AP_C_YELLOW}activate <p>%f  Enable a plugin and add to .zshrc"
+  print -P "   %F{$AP_C_YELLOW}activate-all%f  Activate all installed plugins"
+  print -P "   %F{$AP_C_YELLOW}update%f        Update all installed plugins"
+  print -P "   %F{$AP_C_YELLOW}help%f          Show this help message\n"
+}
+
+_aporia_dashboard() {
+  # Header
+  print -P "\n %F{$AP_C_ORANGE}APORIA%f %F{$AP_C_GRAY}— The Dark Flame Edition %f%B%F{$AP_C_BLUE}v${APORIA_VERSION:-1.0.0}%f%b"
+  print -P " %F{$AP_C_GRAY}──────────────────────────────────────────────────%f"
+
+  # System Status
+  print -P " %F{$AP_C_BLUE}System Info%f"
+  print -P "   %F{$AP_C_WHITE}${(r:12:):-OS}:%f  ${_AP_ICO_OS:-?} $(uname -s)"
+  print -P "   %F{$AP_C_WHITE}${(r:12:):-Shell}:%f  Zsh $ZSH_VERSION"
+  
+  local icon_mode="Standard Unicode"
+  [[ ${AP_USE_NERD_FONT:-1} -eq 1 ]] && icon_mode="Nerd Font (Rich)"
+  [[ ${AP_ASCII_FALLBACK:-0} -eq 1 ]] && icon_mode="ASCII Fallback"
+  print -P "   %F{$AP_C_WHITE}${(r:12:):-Icons}:%f  $icon_mode"
+  
+  local locale_status="%F{$AP_C_GREEN}UTF-8%f"
+  _ap_is_utf8 || locale_status="%F{$AP_C_RED}Standard%f"
+  print -P "   %F{$AP_C_WHITE}${(r:12:):-Locale}:%f  $locale_status"
+
+  # Theme Config
+  print -P "\n %F{$AP_C_BLUE}Configuration%f"
+  _ap_print_flag "SSH Segment" ${AP_SHOW_SSH:-1}
+  _ap_print_flag "Git Segment" ${AP_SHOW_GIT:-1}
+  _ap_print_flag "Lang Stats"  ${AP_SHOW_LANGS:-1}
+  _ap_print_flag "Exec Time"   ${AP_SHOW_EXEC_TIME:-1}
+  _ap_print_flag "Exit Code"   ${AP_SHOW_EXIT_CODE:-1}
+  _ap_print_flag "Clock"       ${AP_SHOW_TIME:-1}
+
+  # Plugins
+  local active_count=${#AP_PLUGINS[@]}
+  local total_count=${#_AP_PLUGIN_REGISTRY[@]}
+  print -P "\n %F{$AP_C_BLUE}Plugins%f"
+  print -P "   %F{$AP_C_WHITE}${(r:12:):-Active}:%f  %F{$AP_C_GREEN}$active_count%f / $total_count"
+  print -P "   %F{$AP_C_GRAY}Run 'aporia list' for more details.%f"
+
+  # Footer / Help
+  print -P "\n %F{$AP_C_GRAY}Type 'aporia help' for a list of commands.%f\n"
+}
+
+aporia() {
+  local cmd=$1
+  case "$cmd" in
+    list)
+      aporia-list-plugins
+      ;;
+    install)
+      shift
+      aporia-install-plugin "$@"
+      ;;
+    update)
+      aporia-update-plugins
+      ;;
+    activate)
+      shift
+      aporia-activate-plugin "$@"
+      ;;
+    activate-all)
+      aporia-activate-all
+      ;;
+    info|status|"")
+      _aporia_dashboard
+      ;;
+    help|--help|-h)
+      _aporia_help
+      ;;
+    *)
+      print -P "%F{$AP_C_RED}[aporia] Unknown command: $cmd%f"
+      _aporia_help
+      return 1
+      ;;
+  esac
+}
