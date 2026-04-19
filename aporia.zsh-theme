@@ -27,6 +27,17 @@ fi
 #  INTERNAL UTILS
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+# Load datetime module for EPOCHSECONDS (zsh 5.8+)
+zmodload zsh/datetime 2>/dev/null
+
+autoload -Uz is-at-least
+
+if is-at-least 5.8; then
+  _ap_now() { echo $EPOCHSECONDS }
+else
+  _ap_now() { date +%s }
+fi
+
 # Platform detection
 _ap_is_macos() { [[ $(uname -s) == "Darwin" ]]; }
 _ap_is_linux() { [[ $(uname -s) == "Linux"  ]]; }
@@ -38,8 +49,9 @@ _ap_get_os_icon() {
     return
   fi
 
-  if [[ -f /etc/os-release ]]; then
-    local id=$(grep -E "^ID=" /etc/os-release | cut -d= -f2 | tr -d '"' | tr '[:upper:]' '[:lower:]')
+  _AP_OS_RELEASE=${_AP_OS_RELEASE:-/etc/os-release}
+  if [[ -f $_AP_OS_RELEASE ]]; then
+    local id=$(grep -E "^ID=" "$_AP_OS_RELEASE" | cut -d= -f2 | tr -d '"' | tr '[:upper:]' '[:lower:]')
     case "$id" in
       # ── Debian family ───────────────────────────────────────
       debian)        echo "󰣚" ;;
@@ -273,7 +285,8 @@ AP_C_GRAY=${AP_C_GRAY:-242}       # mid gray text   #6c6c6c
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 # [1] Root User Adaptivity (Safety Mode)
-if [[ $UID -eq 0 ]]; then
+_AP_UID=${_AP_UID:-$UID}
+if [[ $_AP_UID -eq 0 ]]; then
   _AP_ICO_PROMPT="${_AP_ICO_OS}"  # use OS branding as prompt for root
 fi
 
@@ -292,12 +305,6 @@ if ! _ap_is_utf8 && [[ ${AP_HIDE_LOCALE_WARN:-0} -eq 0 ]]; then
   AP_HIDE_LOCALE_WARN=1
 fi
 
-# Guard EPOCHSECONDS — fall back to $SECONDS if zsh < 5.8
-if (( ${ZSH_VERSION//./} >= 580 )) && [[ -n $EPOCHSECONDS ]]; then
-  _ap_now() { echo $EPOCHSECONDS }
-else
-  _ap_now() { echo $SECONDS }
-fi
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  SEGMENT HELPERS
@@ -362,7 +369,25 @@ _ap_git_info() {
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  LANGUAGE VERSIONS  (project-aware, lazy)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+typeset -g _ap_lang_cache_pwd=""
+typeset -g _ap_lang_cache_val=""
+
+_ap_has_cpp_files() {
+  # Fast glob — no subshell, no find
+  local f
+  for f in "$PWD"/*.{cpp,cc,cxx,c++,C}(N[1]); do
+    [[ -f $f ]] && return 0
+  done
+  return 1
+}
+
 _ap_lang_info() {
+  # Return cached value if still in the same directory
+  if [[ $_ap_lang_cache_pwd == $PWD ]]; then
+    [[ -n $_ap_lang_cache_val ]] && echo "$_ap_lang_cache_val"
+    return
+  fi
+
   local parts=()
 
   # Python — active venv
@@ -416,27 +441,29 @@ _ap_lang_info() {
   fi
 
   # C++ — only inside a C++ project
-  if _ap_find_up "CMakeLists.txt" "Makefile" ".cpp" ".cc"; then
+  if _ap_find_up "CMakeLists.txt" "Makefile" "meson.build" "build.ninja" || _ap_has_cpp_files; then
     local cppv
-    cppv=$(command c++ --version 2>/dev/null | head -n 1 | awk '{print $NF}') && \
+    cppv=$(command c++ --version 2>/dev/null | head -n 1 | awk '{print $NF}') &&
       [[ -n $cppv ]] && parts+=("%F{$AP_C_BLUE}${_AP_ICO_CPP} $cppv%f")
   fi
 
-  (( ${#parts[@]} > 0 )) && echo "${(j:  :)parts}"
+  _ap_lang_cache_pwd=$PWD
+  _ap_lang_cache_val="${(j: :)parts}"
+  [[ -n $_ap_lang_cache_val ]] && echo "$_ap_lang_cache_val"
 }
 
 # Walk up directory tree looking for any of the given filenames
 _ap_find_up() {
   local dir=$PWD
-  while [[ $dir != "/" && $dir != "$HOME" ]]; do
+  while [[ $dir != "/" ]]; do
     for f in "$@"; do
       [[ -e "$dir/$f" ]] && return 0
     done
     dir=${dir:h}
   done
-  # Check one last time at the boundary
+  # Check root one final time
   for f in "$@"; do
-    [[ -e "$dir/$f" ]] && return 0
+    [[ -e "/$f" ]] && return 0
   done
   return 1
 }
@@ -578,32 +605,39 @@ add-zsh-hook preexec _ap_set_title
 #  (enables jump-to-prompt, cmd output selection)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 if [[ $TERM_PROGRAM == "iTerm.app" ]]; then
-  # Mark prompt start
-  add-zsh-hook precmd  _ap_iterm2_prompt_start
-  add-zsh-hook preexec _ap_iterm2_preexec
-
   _ap_iterm2_prompt_start() { print -Pn "\e]133;A\a"; }
   _ap_iterm2_preexec()      { print -Pn "\e]133;C\a"; }
+
+  add-zsh-hook precmd  _ap_iterm2_prompt_start
+  add-zsh-hook preexec _ap_iterm2_preexec
 fi
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-#  APORIA ESSENTIALS (Plugins)
+#  APORIA PLUGIN SYSTEM
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-_ap_load_essentials() {
-  local pdir="$HOME/.aporia/plugins"
-  
-  # 1. Autosuggestions
-  if [[ -f "$pdir/zsh-autosuggestions/zsh-autosuggestions.zsh" ]]; then
-    source "$pdir/zsh-autosuggestions/zsh-autosuggestions.zsh"
-    # subtle gray suggestions matching our theme
-    ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=242"
+_ap_load_plugins_system() {
+  # Look for aporia.plugin.zsh in:
+  # 1. Same directory as this theme file (developers/repo)
+  # 2. $HOME (installed via installer)
+  local theme_dir=${${(%):-%x}:h}
+  local plugin_file=""
+
+  if [[ -f "$theme_dir/aporia.plugin.zsh" ]]; then
+    plugin_file="$theme_dir/aporia.plugin.zsh"
+  elif [[ -f "$HOME/.aporia.plugin.zsh" ]]; then
+    plugin_file="$HOME/.aporia.plugin.zsh"
   fi
 
-  # 2. Syntax Highlighting (Must be loaded last)
-  if [[ -f "$pdir/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]]; then
-    source "$pdir/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+  if [[ -n $plugin_file ]]; then
+    source "$plugin_file"
+  else
+    # Fallback to absolute barebones if plugin file is missing
+    local pdir="$HOME/.aporia/plugins"
+    [[ -f "$pdir/zsh-autosuggestions/zsh-autosuggestions.zsh" ]] && \
+      source "$pdir/zsh-autosuggestions/zsh-autosuggestions.zsh"
+    [[ -f "$pdir/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]] && \
+      source "$pdir/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
   fi
 }
 
-# Run essentials loader
-_ap_load_essentials
+_ap_load_plugins_system

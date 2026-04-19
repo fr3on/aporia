@@ -12,7 +12,11 @@ jobs:
       - name: shellcheck scripts
         run: shellcheck install.sh uninstall.sh
       - name: run tests
-        run: zsh tests/test_segments.zsh && zsh tests/test_compat.zsh
+        run: |
+          zsh tests/test_segments.zsh
+          zsh tests/test_compat.zsh
+          zsh tests/test_languages.zsh
+          zsh tests/test_utils.zsh
   lint-macos:
     runs-on: macos-latest
     steps:
@@ -20,4 +24,8 @@ jobs:
       - name: zsh syntax check
         run: zsh -n aporia.zsh-theme
       - name: run tests
-        run: zsh tests/test_segments.zsh
+        run: |
+          zsh tests/test_segments.zsh
+          zsh tests/test_compat.zsh
+          zsh tests/test_languages.zsh
+          zsh tests/test_utils.zsh

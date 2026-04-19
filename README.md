@@ -49,13 +49,41 @@ brew install https://raw.githubusercontent.com/fr3on/aporia/main/Formula/aporia.
 
 ---
 
-## Aporia Essentials
-To enable the full "Terminal OS" experience, we recommend installing the **Essentials Bundle** during setup. This activates:
-*   **zsh-autosuggestions**: Predictions based on your history.
-*   **zsh-syntax-highlighting**: Commands turn Green/Red as you type.
+## Plugin System
 
-> [!TIP]
-> Run the `install.sh` and select **"Y"** when prompted for Essentials to have these pre-configured for you.
+Aporia features a modular plugin system that keeps your prompt fast while giving you the tools you need. Plugins are opt-in and handled via the `AP_PLUGINS` array.
+
+### Quick Start
+Add your desired plugins to `~/.zshrc` before the theme is sourced:
+```zsh
+AP_PLUGINS=(history-substring-search autopair docker-ctx aws-profile)
+source ~/.aporia.zsh-theme
+```
+
+### Available Plugins
+
+| Plugin | Description | Depends on | Install |
+|---|---|---|---|
+| `history-substring-search` | `↑`/`↓` searches history by typed prefix | none | `aporia-install-plugin history-substring-search` |
+| `autopair` | Auto-closes `"`, `'`, `(`, `[`, `` ` `` | none | `aporia-install-plugin autopair` |
+| `you-should-use` | Reminds you when a shorter alias exists | none | `aporia-install-plugin you-should-use` |
+| `fast-syntax-highlighting` | Drop-in FSH replacement (faster, themeable) | none | `aporia-install-plugin fast-syntax-highlighting` |
+| `fzf-tab` | Replaces tab completion menu with fzf | `fzf` | `aporia-install-plugin fzf-tab` |
+| `fzf-history` | Replaces `Ctrl+R` with fzf history browser | `fzf` | `aporia-install-plugin fzf-history` |
+| `docker-ctx` | Shows Docker context in prompt (no subprocess) | none | bundled |
+| `kube-ctx` | Shows kubectl context:namespace (no kubectl) | `kubectl` on PATH | bundled |
+| `aws-profile` | Shows `$AWS_PROFILE` + region, red on prod | none | bundled |
+| `autoswitch-venv` | Auto-activates virtualenv on `cd` | none | `aporia-install-plugin autoswitch-venv` |
+| `nix-shell` | Shows active Nix/devenv shell | none | bundled |
+| `forgit` | `fzf`-powered interactive `git` workflows | `fzf`, `git` | `aporia-install-plugin forgit` |
+| `sudo` | Double `ESC` → prepend `sudo` | none | bundled |
+
+### Plugin Management
+*   **`aporia-install-plugin <name>`**: Installs a third-party plugin from its upstream repository.
+*   **`aporia-update-plugins`**: Pulls the latest changes for all your installed plugins.
+*   **`aporia-list-plugins`**: Shows which plugins are installed and which are currently active.
+
+---
 
 ---
 
