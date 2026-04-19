@@ -24,6 +24,20 @@ Aporia isn't just a prompt; it's a **context-aware environment**. It adapts dyna
 
 ---
 
+## Compatibility
+
+Aporia is designed for native performance across Unix-like systems. It is formally compatible with:
+
+*   **macOS**: Native optimized support via Homebrew or standard install.
+*   **Linux**: Full support for Debian, Ubuntu, Arch, Fedora, Alpine, and more.
+*   **Windows**: Supported via **WSL2** (requires a Nerd Font installed on the Windows side).
+
+**Requirements**:
+- **Zsh**: Version 5.2 or newer.
+- **Font**: A [Nerd Font](https://www.nerdfonts.com) (e.g., JetBrainsMono, Hack) for high-fidelity icons.
+
+---
+
 ## Installation
 
 ### 1-Click Install (Universal)
@@ -54,9 +68,14 @@ brew install https://raw.githubusercontent.com/fr3on/aporia/main/Formula/aporia.
 Aporia features a modular plugin system that keeps your prompt fast while giving you the tools you need. Plugins are opt-in and handled via the `AP_PLUGINS` array.
 
 ### Quick Start
-Add your desired plugins to `~/.zshrc` before the theme is sourced:
+The easiest way to enable features is to use the built-in activation command:
 ```zsh
-AP_PLUGINS=(history-substring-search autopair docker-ctx aws-profile)
+aporia-activate-plugin <name>
+```
+
+Alternatively, you can manually define the `AP_PLUGINS` array in your `~/.zshrc` before the theme is sourced:
+```zsh
+AP_PLUGINS=(sudo docker-ctx fast-syntax-highlighting)
 source ~/.aporia.zsh-theme
 ```
 
@@ -80,6 +99,8 @@ source ~/.aporia.zsh-theme
 
 ### Plugin Management
 *   **`aporia-install-plugin <name>`**: Installs a third-party plugin from its upstream repository.
+*   **`aporia-activate-plugin <name>`**: Installs (if missing) and activates a plugin in your current session and `~/.zshrc`.
+*   **`aporia-activate-all`**: Automatically activates all plugins currently installed on your system.
 *   **`aporia-update-plugins`**: Pulls the latest changes for all your installed plugins.
 *   **`aporia-list-plugins`**: Shows which plugins are installed and which are currently active.
 
