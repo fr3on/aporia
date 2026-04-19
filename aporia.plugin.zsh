@@ -160,6 +160,8 @@ aporia-list-plugins() {
   for name url in "${(@kv)_AP_PLUGIN_REGISTRY}"; do
     if (( ${AP_PLUGINS[(Ie)$name]} )); then
       plugin_status="%F{$AP_C_GREEN}● active%f"
+    elif [[ $name == "zsh-autosuggestions" || $name == "zsh-syntax-highlighting" ]] && [[ -d "$AP_PLUGIN_DIR/$name" ]]; then
+      plugin_status="%F{$AP_C_GREEN}● active (essential)%f"
     elif [[ -d "$AP_PLUGIN_DIR/$name" ]]; then
       plugin_status="%F{$AP_C_YELLOW}○ installed, not active%f"
     else
@@ -167,9 +169,75 @@ aporia-list-plugins() {
     fi
     print -P "  %-30s $plugin_status" "$name"
   done
+
+  print -P "\n%F{$AP_C_GRAY}Tip: To activate an installed plugin, use: aporia-activate-plugin <name>%f"
+  print -P "%F{$AP_C_GRAY}To activate all installed plugins at once, use: aporia-activate-all%f"
 }
 
-# ── Bootstrap ────────────────────────────────────────────────
+aporia-activate-plugin() {
+  local name=$1
+  if [[ -z $name ]]; then
+    print -P "%F{$AP_C_RED}Usage: aporia-activate-plugin <plugin-name>%f"
+    return 1
+  fi
+  
+  if [[ ! -d "$AP_PLUGIN_DIR/$name" ]]; then
+    print -P "%F{$AP_C_RED}[aporia] '$name' is not installed. Run aporia-install-plugin first.%f"
+    return 1
+  fi
+
+  if (( ${AP_PLUGINS[(Ie)$name]} )); then
+    print -P "%F{$AP_C_YELLOW}[aporia] '$name' is already active.%f"
+    return 0
+  fi
+
+  # Activate in current session
+  AP_PLUGINS+=("$name")
+  _ap_plugin_source "$name"
+
+  # Persistent activation in ~/.zshrc
+  local zrc="$HOME/.zshrc"
+  local found=0
+  if [[ -f $zrc ]]; then
+    if grep -q "AP_PLUGINS=(" "$zrc"; then
+      # Add to existing array
+      if ! grep -q "$name" "$zrc"; then
+         # Using a temp file for portability across sed versions
+         sed "s/AP_PLUGINS=(\([^)]*\))/AP_PLUGINS=(\1 $name)/" "$zrc" > "${zrc}.tmp" && mv "${zrc}.tmp" "$zrc"
+         found=1
+      fi
+    else
+      # Create new array before theme source
+      if grep -q "aporia.zsh-theme" "$zrc"; then
+        sed "/aporia.zsh-theme/i export AP_PLUGINS=($name)" "$zrc" > "${zrc}.tmp" && mv "${zrc}.tmp" "$zrc"
+        found=1
+      else
+        print "\nexport AP_PLUGINS=($name)" >> "$zrc"
+        found=1
+      fi
+    fi
+  fi
+  
+  if [[ $found -eq 1 ]]; then
+    print -P "%F{$AP_C_GREEN}[aporia] '$name' activated and added to ~/.zshrc%f"
+  else
+    print -P "%F{$AP_C_GREEN}[aporia] '$name' activated for this session only (could not patch .zshrc automatically).%f"
+  fi
+}
+
+aporia-activate-all() {
+  local count=0
+  local name
+  for name in "${(@k)_AP_PLUGIN_REGISTRY}"; do
+    if [[ -d "$AP_PLUGIN_DIR/$name" && ! "zsh-autosuggestions" == "$name" && ! "zsh-syntax-highlighting" == "$name" ]]; then
+      if (( ! ${AP_PLUGINS[(Ie)$name]} )); then
+        aporia-activate-plugin "$name"
+        ((count++))
+      fi
+    fi
+  done
+  print -P "%F{$AP_C_GREEN}[aporia] $count new plugins activated.%f"
+}
 
 # Always load Essentials (autosuggestions and syntax highlighting)
 _ap_load_essentials() {
