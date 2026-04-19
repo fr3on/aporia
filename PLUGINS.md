@@ -48,22 +48,22 @@ aporia-activate-plugin <plugin-name>
 
 ---
 
-## ⚡ Productivity Tools
+## Productivity Tools
 
-### ⚡ `sudo`
+### `sudo`
 **What it does:** Quickly prepend `sudo` to your current or previous command.
 - **Keybinding:** Press **`ESC`** twice.
 - **Try This:** 
   1. Type `apt update` (or any command that needs root).
   2. Realize you forgot sudo? Press **`ESC` `ESC`**. It will turn into `sudo apt update` automatically.
 
-### ⚡ `autopair`
+### `autopair`
 **What it does:** Automatically closes brackets, quotes, and parentheticals.
 - **Try This:** 
   1. Type `(`. It will automatically become `()`.
   2. Type `"`. It will automatically become `""`.
 
-### ⚡ `you-should-use`
+### `you-should-use`
 **What it does:** Reminds you to use your aliases when you type a full command.
 - **Try This:** 
   1. Create an alias: `alias gs='git status'`.
