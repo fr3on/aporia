@@ -91,6 +91,7 @@ source ~/.aporia.zsh-theme
 | `docker-ctx` | Shows Docker context in prompt (no subprocess) | none | bundled |
 | `kube-ctx` | Shows kubectl context:namespace (no kubectl) | `kubectl` on PATH | bundled |
 | `aws-profile` | Shows `$AWS_PROFILE` + region, red on prod | none | bundled |
+| `proxmox` | Detects Proxmox Host nodes and Guest VMs | none | bundled |
 | `autoswitch-venv` | Auto-activates virtualenv on `cd` | none | `aporia-install-plugin autoswitch-venv` |
 | `nix-shell` | Shows active Nix/devenv shell | none | bundled |
 | `forgit` | `fzf`-powered interactive `git` workflows | `fzf`, `git` | `aporia-install-plugin forgit` |

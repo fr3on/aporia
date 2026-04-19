@@ -25,6 +25,7 @@ declare -A PLUGIN_REGISTRY=(
   ["nix-shell"]=""
   ["forgit"]="https://github.com/wfxr/forgit"
   ["sudo"]=""
+  ["proxmox"]=""
 )
 
 SELECTED_PLUGINS=()

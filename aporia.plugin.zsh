@@ -34,6 +34,7 @@ typeset -gA _AP_PLUGIN_REGISTRY=(
   sudo                      ""   # first-party (no upstream dep)
   zsh-autosuggestions       "https://github.com/zsh-users/zsh-autosuggestions"
   zsh-syntax-highlighting   "https://github.com/zsh-users/zsh-syntax-highlighting"
+  proxmox                   ""   # first-party
 )
 
 # ── Dependencies: plugin_name → required binary ─────────────
@@ -138,6 +139,15 @@ aporia-install-plugin() {
 
   local url=${_AP_PLUGIN_REGISTRY[$name]:-}
   if [[ -z $url ]]; then
+    # First-party / Bundled plugin?
+    local bundled_src="./plugins/$name"
+    if [[ -d $bundled_src ]]; then
+      print -P "%F{$AP_C_BLUE}[aporia] Copying bundled plugin '$name' to $AP_PLUGIN_DIR...%f"
+      mkdir -p "$AP_PLUGIN_DIR"
+      cp -r "$bundled_src" "$AP_PLUGIN_DIR/" || return 1
+      print -P "%F{$AP_C_GREEN}[aporia] '$name' installed. Run 'aporia-activate-plugin $name' to activate.%f"
+      return 0
+    fi
     print -P "%F{$AP_C_RED}[aporia] No upstream URL for '$name'. Is it a first-party plugin?%f"
     return 1
   fi
@@ -194,7 +204,7 @@ aporia-list-plugins() {
       plugin_status="%F{$AP_C_GREEN}● active%f"
     elif [[ $name == "zsh-autosuggestions" || $name == "zsh-syntax-highlighting" ]] && [[ -d "$AP_PLUGIN_DIR/$name" ]]; then
       plugin_status="%F{$AP_C_GREEN}● active (essential)%f"
-    elif [[ -d "$AP_PLUGIN_DIR/$name" ]]; then
+    elif [[ -d "$AP_PLUGIN_DIR/$name" ]] || [[ -d "${${(%):-%x}:h}/plugins/$name" ]]; then
       plugin_status="%F{$AP_C_YELLOW}○ installed, not active%f"
     else
       plugin_status="%F{$AP_C_GRAY}○ not installed%f"
@@ -213,8 +223,14 @@ aporia-activate-plugin() {
     return 1
   fi
   
-  if [[ ! -d "$AP_PLUGIN_DIR/$name" ]]; then
-    print -P "%F{$AP_C_RED}[aporia] '$name' is not installed. Run aporia-install-plugin first.%f"
+  local bundle_dir="${${(%):-%x}:h}/plugins/$name"
+  if [[ ! -d "$AP_PLUGIN_DIR/$name" && ! -d "$bundle_dir" ]]; then
+    if [[ -n ${_AP_PLUGIN_REGISTRY[$name]+x} ]]; then
+      print -P "%F{$AP_C_RED}[aporia] '$name' is not installed in $AP_PLUGIN_DIR.%f"
+      print -P "%F{$AP_C_GRAY}        Run: aporia-install-plugin $name%f"
+    else
+      print -P "%F{$AP_C_RED}[aporia] Unknown plugin '$name'.%f"
+    fi
     return 1
   fi
 

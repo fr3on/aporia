@@ -90,6 +90,11 @@ aporia-activate-plugin <plugin-name>
 - **Safe Mode:** Turns **Red** if your profile starts with `prod` or `production`.
 - **Try This:** `export AWS_PROFILE=prod-deploy`. Watch the prompt turn red as a safety warning.
 
+### `proxmox`
+**What it does:** Identifies if you are on a Proxmox Host node or inside a Proxmox Guest VM.
+- **Example:** `󱘊 PVE Host`
+- **Try This:** Run `aporia-activate-plugin proxmox` while on your Proxmox system to see the branding update.
+
 ---
 
 ## Environment Managers
