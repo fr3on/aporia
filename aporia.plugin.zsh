@@ -147,6 +147,18 @@ aporia-install-plugin() {
       cp -r "$bundled_src" "$AP_PLUGIN_DIR/" || return 1
       print -P "%F{$AP_C_GREEN}[aporia] '$name' installed. Run 'aporia-activate-plugin $name' to activate.%f"
       return 0
+    elif (( $+commands[curl] )); then
+      print -P "%F{$AP_C_BLUE}[aporia] Downloading bundled plugin '$name' from GitHub...%f"
+      local p_base="https://raw.githubusercontent.com/fr3on/aporia/main/plugins/$name"
+      mkdir -p "$AP_PLUGIN_DIR/$name"
+      if curl -fsSL "$p_base/$name.zsh" -o "$AP_PLUGIN_DIR/$name/$name.zsh"; then
+        print -P "%F{$AP_C_GREEN}[aporia] '$name' downloaded and installed. Run 'aporia-activate-plugin $name' now.%f"
+        return 0
+      else
+        rm -rf "$AP_PLUGIN_DIR/$name"
+        print -P "%F{$AP_C_RED}[aporia] Failed to download '$name'. Check your internet connection.%f"
+        return 1
+      fi
     fi
     print -P "%F{$AP_C_RED}[aporia] No upstream URL for '$name'. Is it a first-party plugin?%f"
     return 1
