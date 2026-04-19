@@ -161,6 +161,23 @@ _ap_get_os_icon() {
   fi
 }
 
+# Get detailed OS/Distro name
+_ap_get_os_name() {
+  if _ap_is_macos; then
+    local ver=$(sw_vers -productVersion)
+    echo "macOS $ver"
+    return
+  fi
+
+  if [[ -f /etc/os-release ]]; then
+    local name=$(grep -E "^PRETTY_NAME=" /etc/os-release | cut -d= -f2 | tr -d '"')
+    [[ -z $name ]] && name=$(grep -E "^NAME=" /etc/os-release | cut -d= -f2 | tr -d '"')
+    [[ -n $name ]] && echo "$name" && return
+  fi
+
+  uname -s
+}
+
 # Check if current locale supports UTF-8
 _ap_is_utf8() {
   case "${LANG:-}${LC_ALL:-}${LC_CTYPE:-}" in

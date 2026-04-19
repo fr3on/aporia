@@ -342,7 +342,7 @@ _aporia_dashboard() {
 
   # System Status
   print -P " %F{$AP_C_BLUE}System Info%f"
-  print -P "   %F{$AP_C_WHITE}${(r:12:):-OS}:%f  ${_AP_ICO_OS:-?} $(uname -s)"
+  print -P "   %F{$AP_C_WHITE}${(r:12:):-OS}:%f  ${_AP_ICO_OS:-?} $(_ap_get_os_name)"
   print -P "   %F{$AP_C_WHITE}${(r:12:):-Shell}:%f  Zsh $ZSH_VERSION"
   
   local icon_mode="Standard Unicode"
