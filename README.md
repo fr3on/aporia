@@ -9,7 +9,6 @@
   <img src="screenshots/preview.png" width="800" alt="Aporia Theme Preview">
 </div>
 
----
 
 ## The Aporia Philosophy
 Aporia isn't just a prompt; it's a **context-aware environment**. It adapts dynamically to your project, your privileges, and your operating system—staying minimal when you're busy and providing deep insights when you need them.
@@ -22,7 +21,6 @@ Aporia isn't just a prompt; it's a **context-aware environment**. It adapts dyna
 *   **Zero Dependencies**: Optimized for speed with native Zsh hooks (no slow external calls).
 *   **Aporia Essentials**: Built-in support for ghost-text **Autosuggestions** and live **Syntax Highlighting**.
 
----
 
 ## Compatibility
 
@@ -36,7 +34,6 @@ Aporia is designed for native performance across Unix-like systems. It is formal
 - **Zsh**: Version 5.2 or newer.
 - **Font**: A [Nerd Font](https://www.nerdfonts.com) (e.g., JetBrainsMono, Hack) for high-fidelity icons.
 
----
 
 ## Installation
 
@@ -61,7 +58,6 @@ brew install https://raw.githubusercontent.com/fr3on/aporia/main/Formula/aporia.
 | **Antigen** | `antigen theme fr3on/aporia` |
 | **Zplug** | `zplug "fr3on/aporia", as:theme` |
 
----
 
 ## Plugin System
 
@@ -104,9 +100,6 @@ source ~/.aporia.zsh-theme
 *   **`aporia-update-plugins`**: Pulls the latest changes for all your installed plugins.
 *   **`aporia-list-plugins`**: Shows which plugins are installed and which are currently active.
 
----
-
----
 
 ## Configuration
 Override these variables in your `~/.zshrc` *before* the theme is sourced to customize your experience:
@@ -121,7 +114,6 @@ Override these variables in your `~/.zshrc` *before* the theme is sourced to cus
 | `AP_EXEC_TIME_THRESHOLD` | `2` | Minimum duration (s) to show timing |
 | `AP_DIR_DEPTH` | `3` | Number of directory segments to show |
 
----
 
 ## Troubleshooting
 
@@ -131,7 +123,6 @@ Override these variables in your `~/.zshrc` *before* the theme is sourced to cus
 > 2. Check your locale: Run `locale` and ensure `LANG` includes `UTF-8`.
 > 3. If you cannot use Nerd Fonts, set `AP_ASCII_FALLBACK=1` in your `.zshrc`.
 
----
 
 ## License
 MIT © **Ahmed Mardi (fr3on)**
