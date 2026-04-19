@@ -63,6 +63,9 @@ brew install https://raw.githubusercontent.com/fr3on/aporia/main/Formula/aporia.
 
 Aporia features a modular plugin system that keeps your prompt fast while giving you the tools you need. Plugins are opt-in and handled via the `AP_PLUGINS` array.
 
+> [!TIP]
+> **New to Aporia plugins?** Check out our **[Detailed Plugin Guide (with examples)](PLUGINS.md)** to see how each feature works!
+
 ### Quick Start
 The easiest way to enable features is to use the built-in activation command:
 ```zsh

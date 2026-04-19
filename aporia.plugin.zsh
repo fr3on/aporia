@@ -36,6 +36,14 @@ typeset -gA _AP_PLUGIN_REGISTRY=(
   zsh-syntax-highlighting   "https://github.com/zsh-users/zsh-syntax-highlighting"
 )
 
+# ── Dependencies: plugin_name → required binary ─────────────
+typeset -gA _AP_PLUGIN_DEPS=(
+  fzf-tab      "fzf"
+  fzf-history  "fzf"
+  forgit       "fzf"
+  kube-ctx     "kubectl"
+)
+
 # ── Loader ───────────────────────────────────────────────────
 
 _ap_plugin_source() {
@@ -49,7 +57,23 @@ _ap_plugin_source() {
   fi
 
   if [[ -f $plugin_file ]]; then
+    # Check dependencies before sourcing
+    local dep=${_AP_PLUGIN_DEPS[$name]:-}
+    if [[ -n $dep ]] && ! (( $+commands[$dep] )); then
+      # Special case: some plugins (like kube-ctx) handle missing deps gracefully inside segments
+      # We only warn for "active" plugins that users explicitly requested
+      if [[ $name != "kube-ctx" && $name != "nix-shell" ]]; then
+         print -P "%F{$AP_C_YELLOW}[aporia] Warning: Plugin '$name' requires '$dep' which is not in your PATH.%f"
+      fi
+    fi
+
     source "$plugin_file"
+    
+    # Plugin-specific post-load logic
+    if [[ $name == "fzf-history" ]]; then
+      alias fzf-history='fzf_history_search'
+    fi
+    
     return 0
   fi
 
@@ -88,6 +112,14 @@ _ap_load_plugins() {
   for name in "${deferred[@]}"; do
     _ap_plugin_source "$name"
   done
+
+  # Automatic keybindings for common widgets
+  if [[ -n $widgets[history-substring-search-up] ]]; then
+    bindkey '^[[A' history-substring-search-up
+    bindkey '^[[B' history-substring-search-down
+    [[ -n ${terminfo[kcuu1]} ]] && bindkey "${terminfo[kcuu1]}" history-substring-search-up
+    [[ -n ${terminfo[kcud1]} ]] && bindkey "${terminfo[kcud1]}" history-substring-search-down
+  fi
 }
 
 # ── Install helper (callable from terminal) ──────────────────
