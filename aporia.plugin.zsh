@@ -99,6 +99,11 @@ aporia-install-plugin() {
     return 1
   fi
 
+  if ! (( $+commands[git] )); then
+    print -P "%F{$AP_C_RED}[aporia] Error: 'git' is required but not found in your PATH.%f"
+    return 1
+  fi
+
   local url=${_AP_PLUGIN_REGISTRY[$name]:-}
   if [[ -z $url ]]; then
     print -P "%F{$AP_C_RED}[aporia] No upstream URL for '$name'. Is it a first-party plugin?%f"
@@ -108,31 +113,42 @@ aporia-install-plugin() {
   local dest="$AP_PLUGIN_DIR/$name"
   if [[ -d $dest ]]; then
     print -P "%F{$AP_C_YELLOW}[aporia] '$name' already installed. Updating...%f"
-    git -C "$dest" pull --ff-only
+    git -C "$dest" pull --ff-only || return 1
   else
     print -P "%F{$AP_C_BLUE}[aporia] Installing '$name'...%f"
-    git clone --depth=1 "$url" "$dest"
+    git clone --depth=1 "$url" "$dest" || return 1
   fi
 
   # Rename entry file to match Aporia naming convention if needed
   local canonical="$dest/$name.zsh"
   if [[ ! -f $canonical ]]; then
-    # Try common alternative names
-    for alt in "$dest"/*.plugin.zsh "$dest"/*.zsh; do
+    # Try common alternative names (N) qualifier avoids "no matches found" errors
+    local alt
+    for alt in "$dest"/*.plugin.zsh(N) "$dest"/*.zsh(N); do
       [[ -f $alt ]] && ln -sf "$alt" "$canonical" && break
     done
   fi
 
-  print -P "%F{$AP_C_GREEN}[aporia] '$name' installed. Reload your shell to activate.%f"
+  if [[ -f $canonical ]]; then
+    print -P "%F{$AP_C_GREEN}[aporia] '$name' installed. Reload your shell to activate.%f"
+  else
+    print -P "%F{$AP_C_RED}[aporia] Error: Could not find plugin entry file in '$dest'.%f"
+    return 1
+  fi
 }
 
 aporia-update-plugins() {
+  if ! (( $+commands[git] )); then
+    print -P "%F{$AP_C_RED}[aporia] Error: 'git' is required but not found in your PATH.%f"
+    return 1
+  fi
+
   local name
   for name in "${AP_PLUGINS[@]}"; do
     local dest="$AP_PLUGIN_DIR/$name"
     [[ -d "$dest/.git" ]] && {
       print -P "%F{$AP_C_BLUE}[aporia] Updating $name...%f"
-      git -C "$dest" pull --ff-only --quiet
+      git -C "$dest" pull --ff-only --quiet || print -P "%F{$AP_C_RED}  Failed to update $name%f"
     }
   done
   print -P "%F{$AP_C_GREEN}[aporia] All plugins updated.%f"
