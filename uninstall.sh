@@ -9,9 +9,9 @@ ZSHRC="$HOME/.zshrc"
 C_GREEN="\033[32m"; C_YELLOW="\033[33m"
 C_BOLD="\033[1m";   C_DIM="\033[2m"; C_RESET="\033[0m"
 
-ok()   { printf "${C_GREEN}  ✓${C_RESET}  %s\n" "$1"; }
-warn() { printf "${C_YELLOW}  !${C_RESET}  %s\n" "$1"; }
-hdr()  { printf "\n${C_BOLD}%s${C_RESET}\n" "$1"; }
+ok()   { printf "%b  ✓%b  %s\n" "${C_GREEN}" "${C_RESET}" "$1"; }
+warn() { printf "%b  !%b  %s\n" "${C_YELLOW}" "${C_RESET}" "$1"; }
+hdr()  { printf "\n%b%s%b\n" "${C_BOLD}" "$1" "${C_RESET}"; }
 
 remove_theme() {
   hdr "Removing theme"

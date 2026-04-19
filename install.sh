@@ -34,10 +34,10 @@ SELECTED_PLUGINS=()
 C_GREEN="\033[32m"; C_YELLOW="\033[33m"; C_RED="\033[31m"; C_BLUE="\033[34m"
 C_BOLD="\033[1m";   C_DIM="\033[2m";     C_RESET="\033[0m"
 
-ok()   { printf "${C_GREEN}  ✓${C_RESET}  %s\n" "$1"; }
-warn() { printf "${C_YELLOW}  !${C_RESET}  %s\n" "$1"; }
-fail() { printf "${C_RED}  ✘${C_RESET}  %s\n" "$1"; exit 1; }
-hdr()  { printf "\n${C_BOLD}%s${C_RESET}\n" "$1"; }
+ok()   { printf "%b  ✓%b  %s\n" "${C_GREEN}" "${C_RESET}" "$1"; }
+warn() { printf "%b  !%b  %s\n" "${C_YELLOW}" "${C_RESET}" "$1"; }
+fail() { printf "%b  ✘%b  %s\n" "${C_RED}" "${C_RESET}" "$1"; exit 1; }
+hdr()  { printf "\n%b%s%b\n" "${C_BOLD}" "$1" "${C_RESET}"; }
 
 # ─── ARG PARSING ─────────────────────────────────────────────────────────────
 
@@ -144,9 +144,9 @@ install_plugin() {
           fi
         done
       fi
-      printf "${C_GREEN}installed ✓${C_RESET}\n"
+      printf "%binstalled ✓%b\n" "${C_GREEN}" "${C_RESET}"
     else
-      printf "${C_RED}failed ✗${C_RESET}\n"
+      printf "%bfailed ✗%b\n" "${C_RED}" "${C_RESET}"
       return 1
     fi
   else
@@ -154,7 +154,7 @@ install_plugin() {
     if [ -d "./plugins/$name" ]; then
       printf "${C_BLUE}  →${C_RESET}  %-30s copying bundled... " "$name"
       cp -r "./plugins/$name" "$PLUGIN_DIR/"
-      printf "${C_GREEN}done ✓${C_RESET}\n"
+      printf "%bdone ✓%b\n" "${C_GREEN}" "${C_RESET}"
     else
       printf "${C_RED}  ✗${C_RESET}  %-30s unknown plugin\n" "$name"
       return 1
@@ -170,7 +170,7 @@ setup_plugins() {
   if [ -n "${AP_PLUGINS:-}" ]; then
      # Add existing env plugins to selection if not already there
      for p in "${AP_PLUGINS[@]}"; do
-       if [[ ! " ${SELECTED_PLUGINS[*]} " =~ " ${p} " ]]; then
+       if [[ ! " ${SELECTED_PLUGINS[*]} " == *" $p "* ]]; then
          SELECTED_PLUGINS+=("$p")
        fi
      done
