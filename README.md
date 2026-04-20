@@ -46,8 +46,8 @@ curl -fsSL https://raw.githubusercontent.com/fr3on/aporia/main/install.sh | zsh
 ### Homebrew (macOS)
 The professional way to manage Aporia on your Mac:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/fr3on/aporia/main/Formula/aporia.rb -o /tmp/aporia.rb
-brew install --formula /tmp/aporia.rb
+brew tap fr3on/aporia https://github.com/fr3on/aporia
+brew install aporia
 ```
 *Note: Make sure to add `source $(brew --prefix)/share/aporia/aporia.zsh-theme` to your `.zshrc`.*
 
