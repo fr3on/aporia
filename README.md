@@ -3,7 +3,7 @@
   <p><b>Deep Blue · Context-Aware · High-Performance</b></p>
   <p>A professional Zsh theme designed for developers who demand a state-of-the-art terminal environment.</p>
 
-  <a href="https://github.com/fr3on/aporia/releases/latest"><img src="https://img.shields.io/github/v/release/fr3on/aporia?color=blue&label=version" alt="Latest Version"></a>
+  <a href="https://github.com/fr3on/aporia/releases/tag/v1.1.0"><img src="https://img.shields.io/badge/version-1.1.0-blue" alt="Latest Version"></a>
   <a href="https://github.com/fr3on/aporia/actions/workflows/ci.yml"><img src="https://github.com/fr3on/aporia/actions/workflows/ci.yml/badge.svg" alt="CI Status"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="MIT License"></a>
   <img src="screenshots/preview.png" width="800" alt="Aporia Theme Preview">
@@ -14,11 +14,11 @@
 Aporia isn't just a prompt; it's a **context-aware environment**. It adapts dynamically to your project, your privileges, and your operating system—staying minimal when you're busy and providing deep insights when you need them.
 
 ### Core Features
+*   **Asynchronous Prompt Engine**: Native non-blocking background workers (`zle -F`) for instant terminal snappiness.
+*   **Theme Presets**: Switch between `deep_blue`, `light`, and `amber` color palettes via `AP_THEME`.
 *   **Adaptive Branding**: Official high-fidelity icons for macOS, Debian, Ubuntu, Arch, and more.
-*   **Polyglot Awareness**: Real-time version detection for **Go, Rust, Python, Node, Ruby, PHP, Java, and C++**.
-*   **Root Safety**: Subtle OS-native alerts when running with high privileges.
-*   **Deep Blue UI**: A curated Slate & Electric Blue palette designed for focus and aesthetics.
-*   **Zero Dependencies**: Optimized for speed with native Zsh hooks (no slow external calls).
+*   **Polyglot Awareness**: Real-time project detection for **Go, Rust, Python, Node, Ruby, PHP, Java, and C++**.
+*   **Contextual Intelligence**: New Git stash tracking and dedicated segments for Virtual Environments and Docker.
 *   **Aporia Essentials**: Built-in support for ghost-text **Autosuggestions** and live **Syntax Highlighting**.
 
 
@@ -110,6 +110,7 @@ Override these variables in your `~/.zshrc` *before* the theme is sourced to cus
 
 | Variable | Default | Description |
 | :--- | :--- | :--- |
+| `AP_THEME` | `deep_blue` | Color preset: `deep_blue`, `light`, or `amber` |
 | `AP_USE_NERD_FONT` | `1` | Set to `0` for fallback Unicode characters |
 | `AP_ASCII_FALLBACK` | `0` | Set to `1` to use ASCII separators instead of Nerd Fonts |
 | `AP_SHOW_SSH` | `1` | Show SSH context (user@host) |
