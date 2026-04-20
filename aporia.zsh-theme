@@ -591,15 +591,15 @@ _ap_build_prompt() {
 
   # ── LEFT SIDE ───────────────────────────────────────────────────
 
-  # [1] SSH context — only when connected over SSH
+  # [1] SSH and User context
   if (( AP_SHOW_SSH )) && [[ -n $SSH_CONNECTION || -n $SSH_CLIENT ]]; then
-    LEFT+="%K{$AP_C_PURPLE}%F{$AP_C_WHITE} ${_AP_ICO_SSH} %n@%m "
-    LEFT+="%F{$AP_C_PURPLE}%K{$AP_C_BG2}${_AP_SEP_L}"
-    prev_bg=$AP_C_BG2
-  else
-    # Show OS branding icon locally too
-    LEFT+="%F{$AP_C_GRAY}${_AP_ICO_OS} %f"
+    # Show SSH icon and user@host in orange/white
+    LEFT+="%F{$AP_C_ORANGE}${_AP_ICO_SSH} %F{$AP_C_WHITE}%n@%m %f"
   fi
+
+  # Always show OS branding icon (provides context for both local and SSH sessions)
+  # Color it gray unless we are root, in which case we use the prompt coloring logic later
+  LEFT+="%F{$AP_C_GRAY}${_AP_ICO_OS} %f"
 
   # [2] Directory
   LEFT+="%F{$AP_C_BLUE}${_AP_ICO_DIR} %${AP_DIR_DEPTH}~ "
