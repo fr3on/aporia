@@ -387,18 +387,9 @@ _ap_git_info() {
 typeset -g _ap_lang_cache_pwd=""
 typeset -g _ap_lang_cache_val=""
 
-_ap_has_cpp_files() {
-  # Fast glob — no subshell, no find
-  local f
-  for f in "$PWD"/*.{cpp,cc,cxx,c++,C}(N[1]); do
-    [[ -f $f ]] && return 0
-  done
-  return 1
-}
-
 _ap_lang_info() {
   # Return cached value if still in the same directory
-  if [[ $_ap_lang_cache_pwd == $PWD ]]; then
+  if [[ $_ap_lang_cache_pwd == "_${PWD}" ]]; then
     [[ -n $_ap_lang_cache_val ]] && echo "$_ap_lang_cache_val"
     return
   fi
@@ -456,29 +447,31 @@ _ap_lang_info() {
   fi
 
   # C++ — only inside a C++ project
-  if _ap_find_up "CMakeLists.txt" "Makefile" "meson.build" "build.ninja" || _ap_has_cpp_files; then
+  if _ap_find_up "CMakeLists.txt" "Makefile" "meson.build" "build.ninja" "*.cpp" "*.cxx" "*.cc" "*.c++"; then
     local cppv
     cppv=$(command c++ --version 2>/dev/null | head -n 1 | awk '{print $NF}') &&
       [[ -n $cppv ]] && parts+=("%F{$AP_C_BLUE}${_AP_ICO_CPP} $cppv%f")
   fi
 
-  _ap_lang_cache_pwd=$PWD
+  _ap_lang_cache_pwd="_${PWD}"
   _ap_lang_cache_val="${(j: :)parts}"
   [[ -n $_ap_lang_cache_val ]] && echo "$_ap_lang_cache_val"
 }
 
-# Walk up directory tree looking for any of the given filenames
+# Walk up directory tree looking for any of the given filenames or globs
 _ap_find_up() {
   local dir=$PWD
   while [[ $dir != "/" ]]; do
     for f in "$@"; do
-      [[ -e "$dir/$f" ]] && return 0
+      local matches=("$dir"/$~f(N[1]))
+      [[ ${#matches[@]} -gt 0 ]] && return 0
     done
     dir=${dir:h}
   done
   # Check root one final time
   for f in "$@"; do
-    [[ -e "/$f" ]] && return 0
+    local matches=("/"$~f(N[1]))
+    [[ ${#matches[@]} -gt 0 ]] && return 0
   done
   return 1
 }
@@ -517,6 +510,7 @@ _ap_calc_exec_time() {
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 _ap_build_prompt() {
   local last_exit=$?          # capture IMMEDIATELY — first line
+  typeset -g _ap_last_exit=$last_exit  # share with iTerm2 hook
   _ap_calc_exec_time          # calc before anything resets EPOCHSECONDS
 
   local LEFT="" RIGHT=""
@@ -579,8 +573,8 @@ _ap_build_prompt() {
 
   # [3] Language versions (hide if < 100 chars)
   if (( AP_SHOW_LANGS )) && (( width > 100 )); then
-    local langs=$(_ap_lang_info)
-    [[ -n $langs ]] && RIGHT+="$langs  "
+    _ap_lang_info >/dev/null
+    [[ -n $_ap_lang_cache_val ]] && RIGHT+="$_ap_lang_cache_val  "
   fi
 
   # [4] Clock (hide if < 80 chars)
@@ -628,7 +622,7 @@ add-zsh-hook preexec _ap_set_title_preexec
 #  (enables jump-to-prompt, cmd output selection)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 if [[ $TERM_PROGRAM == "iTerm.app" ]]; then
-  _ap_iterm2_prompt_start() { print -Pn "\e]133;D;$?\a\e]133;A\a"; }
+  _ap_iterm2_prompt_start() { print -Pn "\e]133;D;${_ap_last_exit:-0}\a\e]133;A\a"; }
   _ap_iterm2_preexec()      { print -Pn "\e]133;C\a"; }
 
   add-zsh-hook precmd  _ap_iterm2_prompt_start
