@@ -53,7 +53,7 @@ brew install https://raw.githubusercontent.com/fr3on/aporia/main/Formula/aporia.
 ### Plugin Managers
 | Manager | Configuration |
 | :--- | :--- |
-| **Oh My Zsh** | `git clone https://github.com/fr3on/aporia $ZSH_CUSTOM/themes/aporia` |
+| **Oh My Zsh** | `git clone https://github.com/fr3on/aporia $ZSH_CUSTOM/themes/aporia`<br/>*Set `ZSH_THEME="aporia/aporia"` in `.zshrc`* |
 | **Zinit** | `zinit ice pick"aporia.zsh-theme"; zinit light fr3on/aporia` |
 | **Antigen** | `antigen theme fr3on/aporia` |
 | **Zplug** | `zplug "fr3on/aporia", as:theme` |
@@ -110,12 +110,15 @@ Override these variables in your `~/.zshrc` *before* the theme is sourced to cus
 
 | Variable | Default | Description |
 | :--- | :--- | :--- |
+| `AP_USE_NERD_FONT` | `1` | Set to `0` for fallback Unicode characters |
 | `AP_ASCII_FALLBACK` | `0` | Set to `1` to use ASCII separators instead of Nerd Fonts |
 | `AP_SHOW_SSH` | `1` | Show SSH context (user@host) |
 | `AP_SHOW_GIT` | `1` | Show Git status and upstream info |
 | `AP_SHOW_LANGS` | `1` | Show language versions (only inside projects) |
 | `AP_SHOW_EXEC_TIME` | `1` | Show command execution timing |
 | `AP_EXEC_TIME_THRESHOLD` | `2` | Minimum duration (s) to show timing |
+| `AP_SHOW_EXIT_CODE` | `1` | Show non-zero exit codes |
+| `AP_SHOW_TIME` | `1` | Show the right-side clock |
 | `AP_DIR_DEPTH` | `3` | Number of directory segments to show |
 
 

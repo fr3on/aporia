@@ -35,7 +35,7 @@ zmodload zsh/datetime 2>/dev/null
 
 autoload -Uz is-at-least
 
-if is-at-least 5.8; then
+if is-at-least 5.8 && [[ -n $EPOCHSECONDS ]]; then
   _ap_now() { echo $EPOCHSECONDS }
 else
   _ap_now() { date +%s }
@@ -304,16 +304,11 @@ AP_C_GRAY=${AP_C_GRAY:-242}       # mid gray text   #6c6c6c
 #  ADAPTIVE CONTEXT (Root / Locale)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-# [1] Root User Adaptivity (Safety Mode)
-_AP_UID=${_AP_UID:-$UID}
-if [[ $_AP_UID -eq 0 ]]; then
-  _AP_ICO_PROMPT="${_AP_ICO_OS}"  # use OS branding as prompt for root
-fi
+# [1] Root User Adaptivity is evaluated per-prompt below
 
 # [2] Auto-Locale Fix
 if ! _ap_is_utf8; then
   export LANG="en_US.UTF-8"
-  export LC_ALL="en_US.UTF-8"
 fi
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -531,7 +526,7 @@ _ap_build_prompt() {
 
   # [1] SSH context — only when connected over SSH
   if (( AP_SHOW_SSH )) && [[ -n $SSH_CONNECTION || -n $SSH_CLIENT ]]; then
-    LEFT+="%K{$AP_C_PURPLE}%F{$AP_C_WHITE} ${_AP_ICO_OS} %n@%m "
+    LEFT+="%K{$AP_C_PURPLE}%F{$AP_C_WHITE} ${_AP_ICO_SSH} %n@%m "
     LEFT+="%F{$AP_C_PURPLE}%K{$AP_C_BG2}${_AP_SEP_L}"
     prev_bg=$AP_C_BG2
   else
@@ -559,10 +554,13 @@ _ap_build_prompt() {
   fi
 
   # [4] Prompt character — ❯ colored by exit status
+  local prompt_icon="${_AP_ICO_PROMPT}"
+  [[ $UID -eq 0 || $EUID -eq 0 ]] && prompt_icon="${_AP_ICO_OS}"
+
   if (( last_exit == 0 )); then
-    LEFT+=" %B%F{$AP_C_GREEN}${_AP_ICO_PROMPT}%f%b "
+    LEFT+=" %B%F{$AP_C_GREEN}${prompt_icon}%f%b "
   else
-    LEFT+=" %B%F{$AP_C_RED}${_AP_ICO_PROMPT}%f%b "
+    LEFT+=" %B%F{$AP_C_RED}${prompt_icon}%f%b "
   fi
 
   # ── RIGHT SIDE ──────────────────────────────────────────────────
@@ -591,6 +589,7 @@ _ap_build_prompt() {
   fi
 
   PROMPT="$LEFT%f%k%b"
+  [[ $TERM_PROGRAM == "iTerm.app" ]] && PROMPT+="%{\e]133;B\a%}"
   RPROMPT=$RIGHT
 
   # Clear RPROMPT if empty to avoid issues
@@ -617,15 +616,19 @@ _ap_set_title() {
   # xterm-compatible title escape (works on macOS Terminal, iTerm2, kitty, GNOME)
   print -Pn "\e]0;${title}\a"
 }
+_ap_set_title_preexec() {
+  local cmd="${1//[^[:print:]]/}"
+  print -Pn "\e]0;${cmd}\a"
+}
 add-zsh-hook precmd _ap_set_title
-add-zsh-hook preexec _ap_set_title
+add-zsh-hook preexec _ap_set_title_preexec
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  OPTIONAL: iTerm2 shell integration marks
 #  (enables jump-to-prompt, cmd output selection)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 if [[ $TERM_PROGRAM == "iTerm.app" ]]; then
-  _ap_iterm2_prompt_start() { print -Pn "\e]133;A\a"; }
+  _ap_iterm2_prompt_start() { print -Pn "\e]133;D;$?\a\e]133;A\a"; }
   _ap_iterm2_preexec()      { print -Pn "\e]133;C\a"; }
 
   add-zsh-hook precmd  _ap_iterm2_prompt_start
