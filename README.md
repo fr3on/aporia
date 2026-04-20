@@ -1,5 +1,5 @@
 <div align="center">
-  <h1>🌀 Aporia</h1>
+  <h1>Aporia</h1>
   <p><b>Deep Blue · Context-Aware · High-Performance</b></p>
   <p>A professional Zsh theme designed for developers who demand a state-of-the-art terminal environment.</p>
 
@@ -40,13 +40,13 @@ Aporia is designed for native performance across Unix-like systems. It is formal
 ### 1-Click Install (Universal)
 The fastest way to get started on any system:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/fr3on/aporia/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/fr3on/aporia/main/install.sh | zsh
 ```
 
 ### Homebrew (macOS)
 The professional way to manage Aporia on your Mac:
 ```bash
-brew install https://raw.githubusercontent.com/fr3on/aporia/main/Formula/aporia.rb
+brew install --formula https://raw.githubusercontent.com/fr3on/aporia/main/Formula/aporia.rb
 ```
 *Note: Make sure to add `source $(brew --prefix)/share/aporia/aporia.zsh-theme` to your `.zshrc`.*
 

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env zsh
 # aporia.zsh-theme — installer
 # https://github.com/fr3on/aporia
 set -eu
@@ -11,7 +11,7 @@ ZSHRC="$HOME/.zshrc"
 PLUGIN_DIR="$HOME/.aporia/plugins"
 
 # ─── REGISTRY ────────────────────────────────────────────────────────────────
-declare -A PLUGIN_REGISTRY=(
+typeset -gA PLUGIN_REGISTRY=(
   ["history-substring-search"]="https://github.com/zsh-users/zsh-history-substring-search"
   ["autopair"]="https://github.com/hlissner/zsh-autopair"
   ["you-should-use"]="https://github.com/MichaelAquilina/zsh-you-should-use"
@@ -48,7 +48,7 @@ parse_args() {
       --plugin)
         if [ -n "${2:-}" ]; then
           # Split by comma if provided
-          IFS=',' read -ra ADDR <<< "$2"
+          local ADDR=("${(@s:,:)2}")
           for i in "${ADDR[@]}"; do
             SELECTED_PLUGINS+=("$i")
           done
@@ -168,6 +168,10 @@ setup_plugins() {
   mkdir -p "$PLUGIN_DIR"
 
   # 1. Essentials & Environment detection
+  if [[ ${(t)AP_PLUGINS} != *array* ]]; then
+    AP_PLUGINS=(${=AP_PLUGINS:-})
+  fi
+
   if [ -n "${AP_PLUGINS:-}" ]; then
      # Add existing env plugins to selection if not already there
      for p in "${AP_PLUGINS[@]}"; do
