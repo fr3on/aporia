@@ -24,6 +24,12 @@ assert() {
   fi
 }
 
+# Mock async for synchronous testing
+_ap_async_request() {
+  local key=$1 cmd=$2
+  _AP_ASYNC_DATA[$key]=$(eval "$cmd")
+}
+
 echo "Running Prompt Logic Tests...\n"
 
 # 1. SSH Context
@@ -62,6 +68,13 @@ COLUMNS=40
 _ap_build_prompt
 # At 40 cols, time (needs 80), langs (needs 100), exec_time (needs 60) should hide
 assert "[[ -z \"$RPROMPT\" ]]" "Hides RPROMPT segments in narrow terminal (40 cols)"
+
+# 6. Flat Design Check (No background colors on left)
+# We check if Directory, Venv, and Git segments contain %K
+_ap_build_prompt
+# The OS branding might have a background if SSH is active, but we unset it
+# So LEFT should have NO %K
+assert "[[ \"$PROMPT\" != *\"%K{\"* ]]" "Left side (PROMPT) uses flat design (no background colors)"
 
 echo "\n$_pass passed, $_fail failed"
 if [[ $_fail -eq 0 ]]; then

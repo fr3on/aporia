@@ -354,6 +354,9 @@ _aporia_dashboard() {
   _ap_is_utf8 || locale_status="%F{$AP_C_RED}Standard%f"
   print -P "   %F{$AP_C_WHITE}${(r:12:):-Locale}:%f  $locale_status"
 
+  local theme_name=${AP_THEME:-deep_blue}
+  print -P "   %F{$AP_C_WHITE}${(r:12:):-Theme}:%f  %F{$AP_C_CYAN}$theme_name%f"
+
   # Theme Config
   print -P "\n %F{$AP_C_BLUE}Configuration%f"
   _ap_print_flag "SSH Segment" ${AP_SHOW_SSH:-1}

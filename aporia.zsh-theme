@@ -30,8 +30,10 @@ export APORIA_VERSION="1.0.0"
 #  INTERNAL UTILS
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-# Load datetime module for EPOCHSECONDS (zsh 5.8+)
+# Load modules
 zmodload zsh/datetime 2>/dev/null
+zmodload zsh/parameter 2>/dev/null
+zmodload zsh/system 2>/dev/null
 
 autoload -Uz is-at-least
 
@@ -223,6 +225,8 @@ if [[ $AP_ASCII_FALLBACK -eq 1 ]] || ! _ap_is_utf8; then
   _AP_ICO_DIRTY="*"
   _AP_ICO_AHEAD="^"
   _AP_ICO_BEHIND="v"
+  _AP_ICO_STASH="$"
+  _AP_ICO_DOCKER="dkr"
   _AP_ICO_PROMPT=">"
 elif [[ $AP_USE_NERD_FONT -eq 0 ]]; then
   # Tier 2: Standard Unicode (Compatibility Mode)
@@ -246,6 +250,8 @@ elif [[ $AP_USE_NERD_FONT -eq 0 ]]; then
   _AP_ICO_DIRTY="*"
   _AP_ICO_AHEAD="↑"
   _AP_ICO_BEHIND="↓"
+  _AP_ICO_STASH="⚑"
+  _AP_ICO_DOCKER="dkr"
   _AP_ICO_PROMPT="❯"
 else
   # Tier 1: Nerd Font (Rich Mode)
@@ -269,6 +275,8 @@ else
   _AP_ICO_DIRTY="󰝥"
   _AP_ICO_AHEAD="↑"
   _AP_ICO_BEHIND="↓"
+  _AP_ICO_STASH="󰟫"
+  _AP_ICO_DOCKER="󰡨"
   _AP_ICO_PROMPT="❯"
 fi
 
@@ -284,21 +292,59 @@ fi
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  COLOR PALETTE  (256-color for max terminal compat)
-#  Override any of these before sourcing the theme.
+#  Presets: deep_blue (default), light, amber
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-AP_C_BG0=${AP_C_BG0:-232}        # near-black  #080808
-AP_C_BG1=${AP_C_BG1:-235}        # dark gray   #262626
-AP_C_BG2=${AP_C_BG2:-238}        # mid gray    #444444
-AP_C_BG3=${AP_C_BG3:-241}        # light gray  #626262
-AP_C_WHITE=${AP_C_WHITE:-255}     # bright white
-AP_C_BLUE=${AP_C_BLUE:-39}        # electric blue   #00afff
-AP_C_GREEN=${AP_C_GREEN:-82}      # bright green    #5fd700
-AP_C_YELLOW=${AP_C_YELLOW:-220}   # gold            #ffd700
-AP_C_RED=${AP_C_RED:-196}         # bright red      #ff0000
-AP_C_ORANGE=${AP_C_ORANGE:-208}   # orange          #ff8700
-AP_C_PURPLE=${AP_C_PURPLE:-135}   # purple          #af5fff
-AP_C_CYAN=${AP_C_CYAN:-51}        # cyan            #00ffff
-AP_C_GRAY=${AP_C_GRAY:-242}       # mid gray text   #6c6c6c
+
+_ap_apply_theme() {
+  case "${AP_THEME:-deep_blue}" in
+    light)
+      AP_C_BG0=${AP_C_BG0:-255}        # white
+      AP_C_BG1=${AP_C_BG1:-252}        # light gray
+      AP_C_BG2=${AP_C_BG2:-248}        # silver
+      AP_C_BG3=${AP_C_BG3:-244}        # gray
+      AP_C_WHITE=${AP_C_WHITE:-235}    # dark text
+      AP_C_BLUE=${AP_C_BLUE:-25}       # navy
+      AP_C_GREEN=${AP_C_GREEN:-28}      # dark green
+      AP_C_YELLOW=${AP_C_YELLOW:-136}   # muddy gold
+      AP_C_RED=${AP_C_RED:-124}         # dark red
+      AP_C_ORANGE=${AP_C_ORANGE:-130}   # burnt orange
+      AP_C_PURPLE=${AP_C_PURPLE:-55}    # indigo
+      AP_C_CYAN=${AP_C_CYAN:-31}        # teal
+      AP_C_GRAY=${AP_C_GRAY:-240}       # dim gray
+      ;;
+    amber)
+      AP_C_BG0=${AP_C_BG0:-234}        # dark brown/gray
+      AP_C_BG1=${AP_C_BG1:-235}        # slightly lighter
+      AP_C_BG2=${AP_C_BG2:-237}        # brownish gray
+      AP_C_BG3=${AP_C_BG3:-239}        # mid gray
+      AP_C_WHITE=${AP_C_WHITE:-223}    # soft cream
+      AP_C_BLUE=${AP_C_BLUE:-109}      # dusty blue
+      AP_C_GREEN=${AP_C_GREEN:-108}     # sage green
+      AP_C_YELLOW=${AP_C_YELLOW:-214}   # amber/orange
+      AP_C_RED=${AP_C_RED:-167}         # terra cotta
+      AP_C_ORANGE=${AP_C_ORANGE:-173}   # clay
+      AP_C_PURPLE=${AP_C_PURPLE:-139}   # dusty purple
+      AP_C_CYAN=${AP_C_CYAN:-108}       # muted cyan
+      AP_C_GRAY=${AP_C_GRAY:-243}       # warm gray
+      ;;
+    *) # deep_blue (default)
+      AP_C_BG0=${AP_C_BG0:-232}        # near-black
+      AP_C_BG1=${AP_C_BG1:-235}        # dark gray
+      AP_C_BG2=${AP_C_BG2:-238}        # mid gray
+      AP_C_BG3=${AP_C_BG3:-241}        # light gray
+      AP_C_WHITE=${AP_C_WHITE:-255}     # bright white
+      AP_C_BLUE=${AP_C_BLUE:-39}        # electric blue
+      AP_C_GREEN=${AP_C_GREEN:-82}      # bright green
+      AP_C_YELLOW=${AP_C_YELLOW:-220}   # gold
+      AP_C_RED=${AP_C_RED:-196}         # bright red
+      AP_C_ORANGE=${AP_C_ORANGE:-208}   # orange
+      AP_C_PURPLE=${AP_C_PURPLE:-135}   # purple
+      AP_C_CYAN=${AP_C_CYAN:-51}        # cyan
+      AP_C_GRAY=${AP_C_GRAY:-242}       # mid gray text
+      ;;
+  esac
+}
+_ap_apply_theme
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  ADAPTIVE CONTEXT (Root / Locale)
@@ -343,14 +389,14 @@ _ap_rseg() {
 #  GIT STATUS
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 _ap_git_info() {
-  command git rev-parse --is-inside-work-tree &>/dev/null || return 1
+  command git rev-parse --is-inside-work-tree &>/dev/null || { echo "NONE"; return 1; }
 
   local branch dirty ahead=0 behind=0
 
   # Branch name or short SHA (detached HEAD)
   branch=$(command git symbolic-ref --short HEAD 2>/dev/null)
   [[ -z $branch ]] && branch=$(command git rev-parse --short HEAD 2>/dev/null)
-  [[ -z $branch ]] && return 1
+  [[ -z $branch ]] && { echo "NONE"; return 1; }
 
   # Dirty check (unstaged + staged + untracked)
   if ! command git diff --quiet 2>/dev/null || \
@@ -367,16 +413,22 @@ _ap_git_info() {
     ahead=${ab##*$'\t'}
   fi
 
+  # Stash count
+  local stash=0
+  stash=$(command git stash list 2>/dev/null | wc -l | tr -d ' ')
+
   # Build label
   local label="${_AP_ICO_GIT} $branch"
   [[ -n $dirty   ]] && label+=" ${_AP_ICO_DIRTY}"
   (( ahead  > 0 )) && label+=" ${_AP_ICO_AHEAD}$ahead"
   (( behind > 0 )) && label+=" ${_AP_ICO_BEHIND}$behind"
+  (( stash  > 0 )) && label+=" ${_AP_ICO_STASH}$stash"
 
   # Colour: green=clean, yellow=dirty, red=conflict zone
   local color=$AP_C_GREEN
   [[ -n $dirty   ]] && color=$AP_C_YELLOW
   (( behind > 0 )) && color=$AP_C_RED
+  (( stash  > 0 && stash < 5 )) && [[ $color == $AP_C_GREEN ]] && color=$AP_C_YELLOW
 
   echo "$color $label"    # "COLOR label"
 }
@@ -384,26 +436,9 @@ _ap_git_info() {
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  LANGUAGE VERSIONS  (project-aware, lazy)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-typeset -g _ap_lang_cache_pwd=""
-typeset -g _ap_lang_cache_val=""
-
 _ap_lang_info() {
-  # Return cached value if still in the same directory (prefixed to avoid AUTO_NAME_DIRS hash)
-  # NOTE: This cache is keyed by $PWD. If you change tool versions (e.g., via nvm/pyenv)
-  # in the same directory, run `cd .` to refresh the prompt.
-  if [[ $_ap_lang_cache_pwd == "_${PWD}" ]]; then
-    return
-  fi
-
+  # Language versions only (venv handled separately)
   local parts=()
-
-  # Python — active venv
-  if [[ -n $VIRTUAL_ENV ]]; then
-    local venv_name=$(basename "$VIRTUAL_ENV")
-    parts+=("%F{$AP_C_CYAN}${_AP_ICO_PY} $venv_name%f")
-  elif [[ -n $CONDA_DEFAULT_ENV && $CONDA_DEFAULT_ENV != "base" ]]; then
-    parts+=("%F{$AP_C_CYAN}${_AP_ICO_PY} $CONDA_DEFAULT_ENV%f")
-  fi
 
   # Node — only inside a node project
   if _ap_find_up "package.json" ".node-version" ".nvmrc"; then
@@ -454,22 +489,64 @@ _ap_lang_info() {
       [[ -n $cppv ]] && parts+=("%F{$AP_C_BLUE}${_AP_ICO_CPP} $cppv%f")
   fi
 
-  _ap_lang_cache_pwd="_${PWD}"
-  _ap_lang_cache_val="${(j: :)parts}"
+  local out="${(j: :)parts}"
+  [[ -z $out ]] && echo "NONE" || echo "$out"
 }
 
 # Walk up directory tree looking for any of the given filenames or globs
+# Optimized to check for direct matches before attempting globs
 _ap_find_up() {
   local dir=$PWD
+  local f
   while true; do
     for f in "$@"; do
-      local matches=("$dir"/$~f(N[1]))
-      [[ ${#matches[@]} -gt 0 ]] && return 0
+      if [[ -e "$dir/$f" ]]; then
+        return 0
+      fi
+      # If f contains glob characters, try globbing
+      if [[ $f == *[*?]* ]]; then
+        local matches=("$dir"/$~f(N[1]))
+        [[ ${#matches[@]} -gt 0 ]] && return 0
+      fi
     done
     [[ $dir == "/" || $dir == "$HOME" ]] && break
     dir=${dir:h}
   done
   return 1
+}
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  VIRTUAL ENV & DOCKER CONTEXT
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+_ap_venv_info() {
+  local venv=""
+  if [[ -n $VIRTUAL_ENV ]]; then
+    venv=$(basename "$VIRTUAL_ENV")
+  elif [[ -n $CONDA_DEFAULT_ENV && $CONDA_DEFAULT_ENV != "base" ]]; then
+    venv=$CONDA_DEFAULT_ENV
+  fi
+
+  [[ -n $venv ]] && echo "$venv"
+}
+
+_ap_docker_info() {
+  # Requires docker binary
+  (( $+commands[docker] )) || return 1
+
+  # Cache docker context for the session (refreshed only when needed)
+  if [[ -z $_ap_docker_cache || $_ap_docker_cache_pwd != $PWD ]]; then
+    local ctx
+    ctx=$(command docker context show 2>/dev/null)
+    if [[ -n $ctx && $ctx != "default" ]]; then
+      _ap_docker_cache="$ctx"
+    else
+      _ap_docker_cache=""
+    fi
+    _ap_docker_cache_pwd=$PWD
+  fi
+
+  [[ -n $_ap_docker_cache ]] && echo "$_ap_docker_cache"
 }
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -525,22 +602,36 @@ _ap_build_prompt() {
   fi
 
   # [2] Directory
-  LEFT+="%K{$AP_C_BG2}%F{$AP_C_BLUE} ${_AP_ICO_DIR} %${AP_DIR_DEPTH}~ "
+  LEFT+="%F{$AP_C_BLUE}${_AP_ICO_DIR} %${AP_DIR_DEPTH}~ "
 
-  # [3] Git segment (only in git repos)
+  # [3] Venv / Conda
+  local venv=$(_ap_venv_info)
+  if [[ -n $venv ]]; then
+    LEFT+="%F{$AP_C_GRAY}${_AP_SEP_L} %F{$AP_C_CYAN}${_AP_ICO_PY} $venv "
+  fi
+
+  # [4] Docker Context
+  local dkr=$(_ap_docker_info)
+  if [[ -n $dkr ]]; then
+    LEFT+="%F{$AP_C_GRAY}${_AP_SEP_L} %F{$AP_C_BLUE}${_AP_ICO_DOCKER} $dkr "
+  fi
+
+  # [5] Git segment
   if (( AP_SHOW_GIT )); then
-    local git_raw=$(_ap_git_info)
-    if [[ -n $git_raw ]]; then
+    local git_raw=${_AP_ASYNC_DATA[git]:-}
+    if [[ -z $git_raw ]]; then
+       _ap_async_request "git" "_ap_git_info"
+       git_raw="$AP_C_GRAY ${_AP_ICO_GIT} ..."
+    elif [[ ${_AP_ASYNC_PWDS[git]:-} != $PWD ]]; then
+       _ap_async_request "git" "_ap_git_info"
+       _AP_ASYNC_PWDS[git]=$PWD
+    fi
+
+    if [[ $git_raw != "NONE" ]]; then
       local git_color=${git_raw%% *}
       local git_label=${git_raw#* }
-      LEFT+="%F{$AP_C_BG2}%K{$AP_C_BG1}${_AP_SEP_L}"
-      LEFT+="%K{$AP_C_BG1}%F{$git_color} $git_label "
-      LEFT+="%F{$AP_C_BG1}%K{$AP_C_BG0}${_AP_SEP_L}%k%f"
-    else
-      LEFT+="%F{$AP_C_BG2}%K{$AP_C_BG0}${_AP_SEP_L}%k%f"
+      LEFT+="%F{$AP_C_GRAY}${_AP_SEP_L} %F{$git_color}$git_label "
     fi
-  else
-    LEFT+="%F{$AP_C_BG2}%K{$AP_C_BG0}${_AP_SEP_L}%k%f"
   fi
 
   # [4] Prompt character — ❯ colored by exit status
@@ -567,10 +658,14 @@ _ap_build_prompt() {
     RIGHT+="%F{$AP_C_YELLOW}${_ap_last_exec_time}  %f"
   fi
 
-  # [3] Language versions (hide if < 100 chars)
+  # [3] Language versions (async)
   if (( AP_SHOW_LANGS )) && (( width > 100 )); then
-    _ap_lang_info
-    [[ -n $_ap_lang_cache_val ]] && RIGHT+="$_ap_lang_cache_val  "
+    local lang_raw=${_AP_ASYNC_DATA[lang]:-}
+    if [[ -z $lang_raw || ${_AP_ASYNC_PWDS[lang]:-} != $PWD ]]; then
+       _ap_async_request "lang" "_ap_lang_info"
+       _AP_ASYNC_PWDS[lang]=$PWD
+    fi
+    [[ -n $lang_raw && $lang_raw != "NONE" ]] && RIGHT+="$lang_raw  "
   fi
 
   # [4] Clock (hide if < 80 chars)
@@ -584,6 +679,39 @@ _ap_build_prompt() {
 
   # Clear RPROMPT if empty to avoid issues
   [[ -z $RPROMPT ]] && unset RPROMPT
+}
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  ASYNC WORKER ENGINE
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+typeset -gA _AP_ASYNC_DATA
+typeset -gA _AP_ASYNC_PIDS
+typeset -gA _AP_ASYNC_PWDS
+
+# Cleanup old scalar variables from previous versions to fix AUTO_NAME_DIRS leaks
+unset _ap_async_git_pwd _ap_async_lang_pwd
+
+_ap_async_handler() {
+  local fd=$1
+  local data
+  read -r data <&$fd
+  exec {fd}<&-  # close
+  zle -F $fd    # unregister
+
+  local key=${_AP_ASYNC_PIDS[$fd]}
+  _AP_ASYNC_DATA[$key]=$data
+  unset "_AP_ASYNC_PIDS[$fd]"
+
+  # Redraw prompt
+  zle reset-prompt
+}
+
+_ap_async_request() {
+  local key=$1 cmd=$2
+  local fd
+  exec {fd}< <(eval "$cmd")
+  _AP_ASYNC_PIDS[$fd]=$key
+  zle -F $fd _ap_async_handler
 }
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
