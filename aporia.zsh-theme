@@ -597,9 +597,11 @@ _ap_build_prompt() {
     LEFT+="%F{$AP_C_ORANGE}${_AP_ICO_SSH} %F{$AP_C_WHITE}%n@%m %f"
   fi
 
-  # Always show OS branding icon (provides context for both local and SSH sessions)
-  # Color it gray unless we are root, in which case we use the prompt coloring logic later
-  LEFT+="%F{$AP_C_GRAY}${_AP_ICO_OS} %f"
+  # Always show OS branding icon for normal users
+  # For root (UID 0), this is redundant as the prompt character itself becomes the OS icon
+  if [[ $UID -ne 0 && $EUID -ne 0 ]]; then
+    LEFT+="%F{$AP_C_GRAY}${_AP_ICO_OS} %f"
+  fi
 
   # [2] Directory
   LEFT+="%F{$AP_C_BLUE}${_AP_ICO_DIR} %${AP_DIR_DEPTH}~ "
