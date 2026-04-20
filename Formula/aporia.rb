@@ -2,7 +2,7 @@ class Aporia < Formula
   desc "Adaptive, high-performance Zsh theme for professionals"
   homepage "https://github.com/fr3on/aporia"
   url "https://github.com/fr3on/aporia/archive/refs/tags/1.1.0.tar.gz"
-  sha256 "5ef8e29aabdb6e8b72ff28f3988fcd098159fcf37ffefc0b34f454796861b3aa"
+  sha256 "fc58ffdbcea687d64b78c366e2419381b3a2a3212519e374c4fb57a0f0b480e7"
   license "MIT"
 
   def install
