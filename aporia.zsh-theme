@@ -24,7 +24,7 @@ if [[ -z $ZSH_VERSION ]]; then
 fi
 
 # Aporia Version
-export APORIA_VERSION="1.0.0"
+export APORIA_VERSION="1.1.0"
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  INTERNAL UTILS

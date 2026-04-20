@@ -3,9 +3,10 @@
   <p><b>Deep Blue · Context-Aware · High-Performance</b></p>
   <p>A professional Zsh theme designed for developers who demand a state-of-the-art terminal environment.</p>
 
-  <a href="https://github.com/fr3on/aporia/releases/tag/1.1.0"><img src="https://img.shields.io/badge/version-1.1.0-blue" alt="Latest Version"></a>
-  <a href="https://github.com/fr3on/aporia/actions/workflows/ci.yml"><img src="https://github.com/fr3on/aporia/actions/workflows/ci.yml/badge.svg" alt="CI Status"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="MIT License"></a>
+  <a href="https://github.com/fr3on/aporia/releases/latest"><img src="https://img.shields.io/github/v/release/fr3on/aporia?style=flat-square&logo=github&color=blue" alt="Latest Release"></a>
+  <img src="https://img.shields.io/badge/zsh-%3E%3D5.2-orange?style=flat-square&logo=zsh" alt="Zsh Version">
+  <a href="https://github.com/fr3on/aporia/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/fr3on/aporia/ci.yml?style=flat-square&logo=github-actions" alt="CI Status"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/fr3on/aporia?style=flat-square&color=brightgreen" alt="License"></a>
   <img src="screenshots/preview.png" width="800" alt="Aporia Theme Preview">
 </div>
 
