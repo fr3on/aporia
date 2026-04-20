@@ -168,7 +168,8 @@ setup_plugins() {
   mkdir -p "$PLUGIN_DIR"
 
   # 1. Essentials & Environment detection
-  if [[ ${(t)AP_PLUGINS} != *array* ]]; then
+  # Initialize if not already an array (safe under set -u)
+  if (( ! ${+AP_PLUGINS} )) || [[ ${(t)AP_PLUGINS} != *array* ]]; then
     AP_PLUGINS=(${=AP_PLUGINS:-})
   fi
 
