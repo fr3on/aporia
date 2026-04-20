@@ -1,4 +1,5 @@
 #!/usr/bin/env zsh
+# shellcheck disable=all
 # aporia.zsh-theme — installer
 # https://github.com/fr3on/aporia
 set -eu

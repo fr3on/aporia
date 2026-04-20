@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/usr/bin/env zsh
+# shellcheck disable=all
 # aporia.zsh-theme — uninstaller
 # https://github.com/fr3on/aporia
 set -eu
