@@ -388,9 +388,10 @@ typeset -g _ap_lang_cache_pwd=""
 typeset -g _ap_lang_cache_val=""
 
 _ap_lang_info() {
-  # Return cached value if still in the same directory
+  # Return cached value if still in the same directory (prefixed to avoid AUTO_NAME_DIRS hash)
+  # NOTE: This cache is keyed by $PWD. If you change tool versions (e.g., via nvm/pyenv)
+  # in the same directory, run `cd .` to refresh the prompt.
   if [[ $_ap_lang_cache_pwd == "_${PWD}" ]]; then
-    [[ -n $_ap_lang_cache_val ]] && echo "$_ap_lang_cache_val"
     return
   fi
 
@@ -455,23 +456,18 @@ _ap_lang_info() {
 
   _ap_lang_cache_pwd="_${PWD}"
   _ap_lang_cache_val="${(j: :)parts}"
-  [[ -n $_ap_lang_cache_val ]] && echo "$_ap_lang_cache_val"
 }
 
 # Walk up directory tree looking for any of the given filenames or globs
 _ap_find_up() {
   local dir=$PWD
-  while [[ $dir != "/" ]]; do
+  while true; do
     for f in "$@"; do
       local matches=("$dir"/$~f(N[1]))
       [[ ${#matches[@]} -gt 0 ]] && return 0
     done
+    [[ $dir == "/" || $dir == "$HOME" ]] && break
     dir=${dir:h}
-  done
-  # Check root one final time
-  for f in "$@"; do
-    local matches=("/"$~f(N[1]))
-    [[ ${#matches[@]} -gt 0 ]] && return 0
   done
   return 1
 }
@@ -573,7 +569,7 @@ _ap_build_prompt() {
 
   # [3] Language versions (hide if < 100 chars)
   if (( AP_SHOW_LANGS )) && (( width > 100 )); then
-    _ap_lang_info >/dev/null
+    _ap_lang_info
     [[ -n $_ap_lang_cache_val ]] && RIGHT+="$_ap_lang_cache_val  "
   fi
 

@@ -16,6 +16,8 @@ This is the first stable release of Aporia, representing a complete leap from a 
 *   Hardened Zsh logic (added shell guards and localized path expansion).
 *   Corrected Git status logic for detached heads and dirty state detection.
 *   Auto-UTF8 locale enforcement for icon stability.
+*   **Performance Optimization**: Added directory-level caching for language versions (`node`, `rustc`, etc.) to prevent prompt lag.
+    *   *Note: If you switch language versions (e.g. `nvm use`) in the current directory, a quick `cd .` will invalidate the cache and update the icon.*
 
 ---
 *MIT © 2026 Ahmed Mardi (fr3on)*

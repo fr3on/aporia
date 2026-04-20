@@ -35,6 +35,20 @@ if [[ "$LANG" == *"UTF-8"* ]]; then
   assert "_ap_is_utf8" "Correctly detects UTF-8 locale"
 fi
 
+# 3. Boundary test ($HOME stop)
+  local fake_root="/tmp/aporia-boundary-root"
+  rm -rf "$fake_root"
+  mkdir -p "$fake_root/my-home/proj"
+  touch "$fake_root/Cargo.toml" # File ABOVE $HOME
+  
+  (
+    export HOME="$fake_root/my-home"
+    cd "$fake_root/my-home/proj"
+    assert "! _ap_find_up Cargo.toml" "Does not search beyond \$HOME boundary"
+  )
+  
+  rm -rf "$fake_root"
+
 echo "\n$_pass passed, $_fail failed"
 if [[ $_fail -eq 0 ]]; then
   exit 0

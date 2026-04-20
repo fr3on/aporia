@@ -59,58 +59,67 @@ mkdir -p "$HOME/node-app"
 cd "$HOME/node-app"
 touch package.json
 _ap_lang_cache_pwd="" # Clear cache for safety
-assert "[[ \"$(_ap_lang_info)\" == *\"v20.10.0\"* ]]" "Detects Node.js version"
+_ap_lang_info
+assert "[[ \"\$_ap_lang_cache_val\" == *\"v20.10.0\"* ]]" "Detects Node.js version"
 
 # 2. Rust
 mkdir -p "$HOME/rust-app"
 cd "$HOME/rust-app"
 touch Cargo.toml
 _ap_lang_cache_pwd=""
-assert "[[ \"$(_ap_lang_info)\" == *\"1.75.0\"* ]]" "Detects Rust version"
+_ap_lang_info
+assert "[[ \"\$_ap_lang_cache_val\" == *\"1.75.0\"* ]]" "Detects Rust version"
 
 # 3. Go
 mkdir -p "$HOME/go-app"
 cd "$HOME/go-app"
 touch go.mod
 _ap_lang_cache_pwd=""
-assert "[[ \"$(_ap_lang_info)\" == *\"1.21.5\"* ]]" "Detects Go version"
+_ap_lang_info
+assert "[[ \"\$_ap_lang_cache_val\" == *\"1.21.5\"* ]]" "Detects Go version"
 
 # 4. Ruby
 mkdir -p "$HOME/ruby-app"
 cd "$HOME/ruby-app"
 touch Gemfile
 _ap_lang_cache_pwd=""
-assert "[[ \"$(_ap_lang_info)\" == *\"3.3.0\"* ]]" "Detects Ruby version"
+_ap_lang_info
+assert "[[ \"\$_ap_lang_cache_val\" == *\"3.3.0\"* ]]" "Detects Ruby version"
 
 # 5. PHP
 mkdir -p "$HOME/php-app"
 cd "$HOME/php-app"
 touch composer.json
 _ap_lang_cache_pwd=""
-assert "[[ \"$(_ap_lang_info)\" == *\"8.3.1\"* ]]" "Detects PHP version"
+_ap_lang_info
+assert "[[ \"\$_ap_lang_cache_val\" == *\"8.3.1\"* ]]" "Detects PHP version"
 
 # 6. Java
 mkdir -p "$HOME/java-app"
 cd "$HOME/java-app"
 touch pom.xml
 _ap_lang_cache_pwd=""
-assert "[[ \"$(_ap_lang_info)\" == *\"21.0.1\"* ]]" "Detects Java version"
+_ap_lang_info
+assert "[[ \"\$_ap_lang_cache_val\" == *\"21.0.1\"* ]]" "Detects Java version"
 
 # 7. C++ (CMake + files)
 mkdir -p "$HOME/cpp-app"
 cd "$HOME/cpp-app"
 touch CMakeLists.txt
 _ap_lang_cache_pwd=""
-assert "[[ \"$(_ap_lang_info)\" == *\"15.0.0\"* ]]" "Detects C++ via CMakeLists.txt"
+_ap_lang_info
+assert "[[ \"\$_ap_lang_cache_val\" == *\"15.0.0\"* ]]" "Detects C++ via CMakeLists.txt"
 rm CMakeLists.txt
 touch main.cpp
 _ap_lang_cache_pwd=""
-assert "[[ \"$(_ap_lang_info)\" == *\"15.0.0\"* ]]" "Detects C++ via .cpp file glob"
+_ap_lang_info
+assert "[[ \"\$_ap_lang_cache_val\" == *\"15.0.0\"* ]]" "Detects C++ via .cpp file glob"
 
 # 8. Python Venv
 VIRTUAL_ENV="/home/user/my-venv"
 _ap_lang_cache_pwd=""
-assert "[[ \"$(_ap_lang_info)\" == *\"my-venv\"* ]]" "Detects Python Venv from VIRTUAL_ENV"
+_ap_lang_info
+assert "[[ \"\$_ap_lang_cache_val\" == *\"my-venv\"* ]]" "Detects Python Venv from VIRTUAL_ENV"
 unset VIRTUAL_ENV
 
 # 9. Language Cache Verification
@@ -118,13 +127,16 @@ mkdir -p "$HOME/cache-test"
 cd "$HOME/cache-test"
 touch package.json
 _ap_lang_info > /dev/null
-assert "[[ \"$_ap_lang_cache_pwd\" == \"$PWD\" ]]" "Cache PWD is set correctly"
-local first_call=$(_ap_lang_info)
-local second_call=$(_ap_lang_info)
-assert "[[ \"$first_call\" == \"$second_call\" ]]" "Returns cached value in same directory"
+assert "[[ \"\$_ap_lang_cache_pwd\" == \"_${PWD}\" ]]" "Cache PWD is set correctly"
+_ap_lang_info
+local first_call=$_ap_lang_cache_val
+_ap_lang_info
+local second_call=$_ap_lang_cache_val
+assert "[[ \"\$first_call\" == \"\$second_call\" ]]" "Returns cached value in same directory"
 cd "$HOME"
-local third_call=$(_ap_lang_info)
-assert "[[ \"$third_call\" != \"$first_call\" ]]" "Cache updates on directory change"
+_ap_lang_info
+local third_call=$_ap_lang_cache_val
+assert "[[ \"\$third_call\" != \"\$first_call\" ]]" "Cache updates on directory change"
 
 echo "\n$_pass passed, $_fail failed"
 if [[ $_fail -eq 0 ]]; then
