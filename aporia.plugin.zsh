@@ -2,6 +2,7 @@
 # ║  aporia.plugin.zsh — Plugin Registry & Loader             ║
 # ║  Sourced by the theme after aporia.zsh-theme is loaded    ║
 # ╚═══════════════════════════════════════════════════════════╝
+export APORIA_VERSION="1.1.0"
 
 # ── Plugin directory ────────────────────────────────────────
 AP_PLUGIN_DIR="${AP_PLUGIN_DIR:-$HOME/.aporia/plugins}"
