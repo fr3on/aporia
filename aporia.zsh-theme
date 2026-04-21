@@ -23,8 +23,21 @@ if [[ -z $ZSH_VERSION ]]; then
   return 1 2>/dev/null || exit 1
 fi
 
+# Guard against double-sourcing (e.g. `source ~/.zshrc` after editing).
+if [[ -n ${_APORIA_LOADED:-} ]]; then
+  # Remove prior hooks so we can re-register cleanly below.
+  autoload -Uz add-zsh-hook
+  add-zsh-hook -d precmd  _ap_build_prompt      2>/dev/null
+  add-zsh-hook -d preexec _ap_preexec            2>/dev/null
+  add-zsh-hook -d precmd  _ap_set_title          2>/dev/null
+  add-zsh-hook -d preexec _ap_set_title_preexec  2>/dev/null
+  add-zsh-hook -d precmd  _ap_iterm2_prompt_start 2>/dev/null
+  add-zsh-hook -d preexec _ap_iterm2_preexec      2>/dev/null
+fi
+typeset -g _APORIA_LOADED=1
+
 # Aporia Version
-export APORIA_VERSION="1.1.0"
+export APORIA_VERSION="1.2.0"
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  INTERNAL UTILS
@@ -287,7 +300,8 @@ _AP_ICO_OS=$(_ap_get_os_icon)
 if [[ $AP_ASCII_FALLBACK -eq 1 ]] || ! _ap_is_utf8; then
   _AP_ICO_OS="L"
 elif [[ $AP_USE_NERD_FONT -eq 0 ]]; then
-  if _ap_is_macos; then _AP_ICO_OS=""; else _AP_ICO_OS="L"; fi
+  # Tier 2 Unicode fallback — use standard characters on all platforms.
+  if _ap_is_macos; then _AP_ICO_OS="⌘"; else _AP_ICO_OS="L"; fi
 fi
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -367,23 +381,6 @@ if ! _ap_is_utf8 && [[ ${AP_HIDE_LOCALE_WARN:-0} -eq 0 ]]; then
 fi
 
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-#  SEGMENT HELPERS
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-# _ap_lseg <fg> <bg> <text> [next_bg]
-# Renders a left-side powerline segment with flame separator
-_ap_lseg() {
-  local fg=$1 bg=$2 text=$3 next_bg=${4:-$AP_C_BG0}
-  echo -n "%K{$bg}%F{$fg} $text %F{$bg}%K{$next_bg}${_AP_SEP_L}"
-}
-
-# _ap_rseg <sep_bg> <fg> <bg> <text>
-# Renders a right-side powerline segment
-_ap_rseg() {
-  local sep_bg=$1 fg=$2 bg=$3 text=$4
-  echo -n "%F{$bg}%K{$sep_bg}${_AP_SEP_R}%K{$bg}%F{$fg} $text "
-}
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  GIT STATUS
@@ -582,12 +579,18 @@ _ap_calc_exec_time() {
 #  MAIN PROMPT BUILDER  (runs every precmd)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 _ap_build_prompt() {
-  local last_exit=$?          # capture IMMEDIATELY — first line
-  typeset -g _ap_last_exit=$last_exit  # share with iTerm2 hook
-  _ap_calc_exec_time          # calc before anything resets EPOCHSECONDS
+  # precmd hook: capture mutable state, then render.
+  # Must be the first line so $? refers to the previous command.
+  typeset -g _ap_last_exit=$?
+  _ap_calc_exec_time
+  _ap_render_prompt
+}
 
+_ap_render_prompt() {
+  # Pure renderer. Reads _ap_last_exit / _ap_last_exec_time from globals.
+  # Safe to call from _ap_async_handler without clobbering state.
+  local last_exit=$_ap_last_exit
   local LEFT="" RIGHT=""
-  local prev_bg=$AP_C_BG0     # tracks last bg for separator chaining
 
   # ── LEFT SIDE ───────────────────────────────────────────────────
 
@@ -620,13 +623,18 @@ _ap_build_prompt() {
 
   # [5] Git segment
   if (( AP_SHOW_GIT )); then
+    # Invalidate cached data when PWD changes so stale branches from the
+    # previous repo don't briefly render in the new one.
+    if [[ ${_AP_ASYNC_PWDS[git]:-} != $PWD ]]; then
+      unset "_AP_ASYNC_DATA[git]"
+      _AP_ASYNC_PWDS[git]=$PWD
+      _ap_async_request "git" "_ap_git_info"
+    fi
+
     local git_raw=${_AP_ASYNC_DATA[git]:-}
     if [[ -z $git_raw ]]; then
-       _ap_async_request "git" "_ap_git_info"
-       git_raw="$AP_C_GRAY ${_AP_ICO_GIT} ..."
-    elif [[ ${_AP_ASYNC_PWDS[git]:-} != $PWD ]]; then
-       _ap_async_request "git" "_ap_git_info"
-       _AP_ASYNC_PWDS[git]=$PWD
+      _ap_async_request "git" "_ap_git_info"   # no-op if already pending
+      git_raw="$AP_C_GRAY ${_AP_ICO_GIT} ..."
     fi
 
     if [[ $git_raw != "NONE" ]]; then
@@ -636,7 +644,7 @@ _ap_build_prompt() {
     fi
   fi
 
-  # [4] Prompt character — ❯ colored by exit status
+  # [6] Prompt character — ❯ colored by exit status
   local prompt_icon="${_AP_ICO_PROMPT}"
   [[ $UID -eq 0 || $EUID -eq 0 ]] && prompt_icon="${_AP_ICO_OS}"
 
@@ -662,10 +670,14 @@ _ap_build_prompt() {
 
   # [3] Language versions (async)
   if (( AP_SHOW_LANGS )) && (( width > 100 )); then
+    if [[ ${_AP_ASYNC_PWDS[lang]:-} != $PWD ]]; then
+      unset "_AP_ASYNC_DATA[lang]"
+      _AP_ASYNC_PWDS[lang]=$PWD
+      _ap_async_request "lang" "_ap_lang_info"
+    fi
     local lang_raw=${_AP_ASYNC_DATA[lang]:-}
-    if [[ -z $lang_raw || ${_AP_ASYNC_PWDS[lang]:-} != $PWD ]]; then
-       _ap_async_request "lang" "_ap_lang_info"
-       _AP_ASYNC_PWDS[lang]=$PWD
+    if [[ -z $lang_raw ]]; then
+      _ap_async_request "lang" "_ap_lang_info"   # no-op if already pending
     fi
     [[ -n $lang_raw && $lang_raw != "NONE" ]] && RIGHT+="$lang_raw  "
   fi
@@ -676,7 +688,7 @@ _ap_build_prompt() {
   fi
 
   PROMPT="$LEFT%f%k%b"
-  [[ $TERM_PROGRAM == "iTerm.app" ]] && PROMPT+="%{\e]133;B\a%}"
+  [[ $TERM_PROGRAM == "iTerm.app" ]] && PROMPT+=$'%{\e]133;B\a%}'
   RPROMPT=$RIGHT
 
   # Clear RPROMPT if empty to avoid issues
@@ -687,11 +699,13 @@ _ap_build_prompt() {
 #  ASYNC WORKER ENGINE
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 typeset -gA _AP_ASYNC_DATA
-typeset -gA _AP_ASYNC_PIDS
-typeset -gA _AP_ASYNC_PWDS
+typeset -gA _AP_ASYNC_FDS       # fd → key (was _AP_ASYNC_PIDS, which was a misnomer)
+typeset -gA _AP_ASYNC_PWDS      # key → $PWD at time of last request
+typeset -gA _AP_ASYNC_PENDING   # key → 1 while a request is in-flight
 
-# Cleanup old scalar variables from previous versions to fix AUTO_NAME_DIRS leaks
+# Clean up scalars/hashes from previous theme versions (safe no-op if absent).
 unset _ap_async_git_pwd _ap_async_lang_pwd
+unset _AP_ASYNC_PIDS 2>/dev/null || true
 
 _ap_async_handler() {
   local fd=$1
@@ -700,19 +714,23 @@ _ap_async_handler() {
   exec {fd}<&-  # close
   zle -F $fd    # unregister
 
-  local key=${_AP_ASYNC_PIDS[$fd]}
+  local key=${_AP_ASYNC_FDS[$fd]}
   _AP_ASYNC_DATA[$key]=$data
-  unset "_AP_ASYNC_PIDS[$fd]"
+  unset "_AP_ASYNC_FDS[$fd]"
+  unset "_AP_ASYNC_PENDING[$key]"
 
-  # Redraw prompt
+  _ap_render_prompt
   zle reset-prompt
 }
 
 _ap_async_request() {
   local key=$1 cmd=$2
+  # Idempotent: skip if a request for this key is already in-flight.
+  [[ -n ${_AP_ASYNC_PENDING[$key]:-} ]] && return
+  _AP_ASYNC_PENDING[$key]=1
   local fd
   exec {fd}< <(eval "$cmd")
-  _AP_ASYNC_PIDS[$fd]=$key
+  _AP_ASYNC_FDS[$fd]=$key
   zle -F $fd _ap_async_handler
 }
 
@@ -720,8 +738,6 @@ _ap_async_request() {
 #  ZSH HOOKS & OPTIONS
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-# PROMPT_SUBST lets us use $(...) and %n etc. inside PROMPT strings
-setopt PROMPT_SUBST
 
 # Register hooks
 autoload -Uz add-zsh-hook
