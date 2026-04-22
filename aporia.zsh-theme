@@ -26,6 +26,8 @@ fi
 # Guard against double-sourcing (e.g. `source ~/.zshrc` after editing).
 if [[ -n ${_APORIA_LOADED:-} ]]; then
   # Remove prior hooks so we can re-register cleanly below.
+  # We use the -d flag to delete them before re-adding, ensuring
+  # the theme's main hooks always run FIRST in the chain.
   autoload -Uz add-zsh-hook
   add-zsh-hook -d precmd  _ap_build_prompt      2>/dev/null
   add-zsh-hook -d preexec _ap_preexec            2>/dev/null
@@ -33,11 +35,12 @@ if [[ -n ${_APORIA_LOADED:-} ]]; then
   add-zsh-hook -d preexec _ap_set_title_preexec  2>/dev/null
   add-zsh-hook -d precmd  _ap_iterm2_prompt_start 2>/dev/null
   add-zsh-hook -d preexec _ap_iterm2_preexec      2>/dev/null
+  add-zsh-hook -d precmd  _ap_history_setup      2>/dev/null
 fi
 typeset -g _APORIA_LOADED=1
 
 # Aporia Version
-export APORIA_VERSION="1.2.0"
+export APORIA_VERSION="1.2.1"
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  INTERNAL UTILS
@@ -370,6 +373,25 @@ _ap_apply_theme
 if ! _ap_is_utf8; then
   export LANG="en_US.UTF-8"
 fi
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  HISTORY & INTERACTION (Professional Defaults)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+_ap_history_setup() {
+  # Only set if not already configured by user
+  export HISTFILE="${HISTFILE:-$HOME/.zsh_history}"
+  export HISTSIZE="${HISTSIZE:-10000}"
+  export SAVEHIST="${SAVEHIST:-10000}"
+
+  # Sensible history options for a high-end environment
+  setopt APPEND_HISTORY          # Append to history file instead of overwriting
+  setopt SHARE_HISTORY           # Share history between sessions
+  setopt INC_APPEND_HISTORY      # Write to history file immediately
+  setopt HIST_IGNORE_DUPS        # Don't record dups
+  setopt HIST_IGNORE_SPACE       # Don't record commands starting with space
+  setopt HIST_REDUCE_BLANKS      # Remove extra blanks
+  setopt HIST_VERIFY             # Don't execute immediately upon history expansion
+}
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  LOCALE WARNING
@@ -741,6 +763,7 @@ _ap_async_request() {
 
 # Register hooks
 autoload -Uz add-zsh-hook
+add-zsh-hook precmd _ap_history_setup
 add-zsh-hook precmd _ap_build_prompt
 add-zsh-hook preexec _ap_preexec
 

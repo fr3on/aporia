@@ -2,7 +2,7 @@
 # ║  aporia.plugin.zsh — Plugin Registry & Loader             ║
 # ║  Sourced by the theme after aporia.zsh-theme is loaded    ║
 # ╚═══════════════════════════════════════════════════════════╝
-export APORIA_VERSION="1.1.0"
+export APORIA_VERSION="1.2.1"
 
 # ── Plugin directory ────────────────────────────────────────
 AP_PLUGIN_DIR="${AP_PLUGIN_DIR:-$HOME/.aporia/plugins}"
@@ -280,6 +280,7 @@ aporia-activate-plugin() {
   fi
   
   if [[ $found -eq 1 ]]; then
+    export AP_PLUGINS=(${AP_PLUGINS[@]}) # Ensure exported in current session
     print -P "%F{$AP_C_GREEN}[aporia] '$name' activated and added to ~/.zshrc%f"
   else
     print -P "%F{$AP_C_GREEN}[aporia] '$name' activated for this session only (could not patch .zshrc automatically).%f"

@@ -248,6 +248,12 @@ patch_zshrc() {
   if grep -qF "$SOURCE_LINE" "$ZSHRC" 2>/dev/null; then
     ok "already sourced — no changes"
   else
+    # ── History Defaults (if missing) ──
+    if ! grep -q "HISTFILE=" "$ZSHRC"; then
+      printf '\n# Aporia: History configuration\nexport HISTFILE="$HOME/.zsh_history"\nexport HISTSIZE=10000\nexport SAVEHIST=10000\n' >> "$ZSHRC"
+      ok "added default history settings to .zshrc"
+    fi
+    
     printf '\n# aporia.zsh-theme\n%s\n' "$SOURCE_LINE" >> "$ZSHRC"
     ok "source line added"
   fi
