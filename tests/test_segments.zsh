@@ -7,7 +7,8 @@ export LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8
 
 SOURCE_DIR=$(cd "$(dirname "$0")/.." && pwd)
-export HOME="/tmp/aporia-test-home-3"
+export HOME="/tmp/aporia-test-home-$(date +%s)"
+rm -rf "$HOME"
 mkdir -p "$HOME"
 cd "$HOME"
 
@@ -20,11 +21,12 @@ add-zsh-hook -d preexec _ap_preexec
 _pass=0; _fail=0
 assert() {
   local res
-  res=$(eval "$1" 2>&1)
-  if [[ $? -eq 0 ]]; then
+  if eval "$1" &>/dev/null; then
     (( _pass++ )); echo "  ✓ $2"
   else
-    (( _fail++ )); echo "  ✗ $2 (Result: $res)"
+    res=$(eval "$1" 2>&1)
+    (( _fail++ )); echo "  ✗ $2"
+    [[ -n $res ]] && echo "    Result: $res"
   fi
 }
 
@@ -55,27 +57,33 @@ command git config user.email "test@example.com"
 command git config user.name "Test User"
 
 # In a fresh repo, it should show the branch name (e.g. main/master)
-local git_init_out=$(_ap_git_info)
+local git_init_out=$(_ap_segment_git)
 assert "[[ \"$git_init_out\" != \"NONE\" ]]" "Git info identifies repo even without commits"
 
 # After first commit
 touch initial-file && command git add initial-file && command git commit -m "initial" -q
-local git_commit_out=$(_ap_git_info)
+local git_commit_out=$(_ap_segment_git)
 assert "[[ \"$git_commit_out\" == *\"main\"* || \"$git_commit_out\" == *\"master\"* ]]" "Git info shows branch name after commit"
 
 # Stash detection
 echo "stash-me" > stash-file
 command git add stash-file
 command git stash push -m "test stash" &>/dev/null
-local git_stash_out=$(_ap_git_info)
-assert "[[ \"$git_stash_out\" == *\"${_AP_ICO_STASH}1\"* ]]" "Git info shows stash count (1)"
+local git_stash_out=$(_ap_segment_git)
+if [[ "$git_stash_out" == *"${_AP_ICO_STASH}1"* ]]; then
+  (( _pass++ )); echo "  ✓ Git info shows stash count (1)"
+else
+  (( _fail++ )); echo "  ✗ Git info shows stash count (1)"
+  echo "    Actual: $git_stash_out"
+  echo "    Expected icon: ${_AP_ICO_STASH}"
+fi
 
 # 4. _ap_venv_info
 VIRTUAL_ENV="/home/user/venv/my-env"
-assert "[[ \"$(_ap_venv_info)\" == \"my-env\" ]]" "Detects VIRTUAL_ENV name"
+assert "[[ \"$(_ap_segment_venv)\" == \"my-env\" ]]" "Detects VIRTUAL_ENV name"
 unset VIRTUAL_ENV
 CONDA_DEFAULT_ENV="conda-env"
-assert "[[ \"$(_ap_venv_info)\" == \"conda-env\" ]]" "Detects CONDA_DEFAULT_ENV name"
+assert "[[ \"$(_ap_segment_venv)\" == \"conda-env\" ]]" "Detects CONDA_DEFAULT_ENV name"
 unset CONDA_DEFAULT_ENV
 
 echo "\n$_pass passed, $_fail failed"

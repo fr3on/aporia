@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.1.2] - The Architectural Harmony Update
+This major refactor aligns the repository structure and internal logic with the core design principles and architectural standards.
+
+### Highlights
+*   **Logic Consolidation**: Moved all core intelligence, plugin management, and the `aporia` CLI from the plugin wrapper into the main theme file.
+*   **Thin Wrapper Architecture**: Refactored `aporia.plugin.zsh` into a lightweight loader, ensuring the theme remains fully functional even when sourced directly.
+*   **Standardized Naming**: Renamed internal segment functions and helpers to follow strict naming conventions (`_ap_segment_*` and `_ap_<verb>_<noun>`).
+*   **Self-Healing History**: Integrated automatic history persistence setup for high-fidelity forensic monitoring.
+
+### Improvements & Fixes
+*   **Improved Modularity**: Unified plugin registries and dependency checks.
+*   **CI Hardening**: Updated smoke tests to reflect the new internal naming and architecture.
+*   **Performance Optimization**: Refined async handler logic for faster prompt rendering.
+
+---
+
 ## [1.1.1] - The Forensic Intelligence Expansion
 This update transforms Aporia into a specialized forensic and digital intelligence environment, introducing real-time monitoring and operational scope tracking.
 

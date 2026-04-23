@@ -10,6 +10,9 @@ class Aporia < Formula
     share.install "aporia.zsh-theme"
     share.install "aporia.plugin.zsh"
     
+    # Install the first-party plugins directory
+    share.install "plugins" if File.directory? "plugins"
+    
     # Also install auxiliary scripts
     share.install "uninstall.sh"
     
