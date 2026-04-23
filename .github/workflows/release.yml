@@ -46,14 +46,14 @@ jobs:
           curl -L "$NEW_URL" -o aporia.tar.gz
           NEW_SHA=$(shasum -a 256 aporia.tar.gz | awk '{print $1}')
           
-          # Update the Ruby file
-          sed -i "s|url \".*\"|url \"$NEW_URL\"|g" Formula/aporia.rb
-          sed -i "s|sha256 \".*\"|sha256 \"$NEW_SHA\"|g" Formula/aporia.rb
+          # Update the Ruby file with more precise patterns
+          sed -i "s|^\s*url \".*\"|  url \"$NEW_URL\"|g" Formula/aporia.rb
+          sed -i "s|^\s*sha256 \".*\"|  sha256 \"$NEW_SHA\"|g" Formula/aporia.rb
           
           rm aporia.tar.gz
           
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Formula/aporia.rb
-          git commit -m "chore: update brew formula to ${{ github.ref_name }}" || echo "No changes"
+          git commit -m "chore: update brew formula to ${{ github.ref_name }}" || echo "No changes to commit"
           git push origin main

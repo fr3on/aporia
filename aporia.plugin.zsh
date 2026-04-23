@@ -351,7 +351,7 @@ _aporia_help() {
 
 _aporia_dashboard() {
   # Header
-  print -P "\n %F{$AP_C_ORANGE}APORIA%f %F{$AP_C_GRAY}— The Dark Flame Edition %f%B%F{$AP_C_BLUE}v${APORIA_VERSION:-1.1.0}%f%b"
+  print -P "\n %F{$AP_C_ORANGE}APORIA%f %F{$AP_C_GRAY}— The Dark Flame Edition %f%B%F{$AP_C_BLUE}v${APORIA_VERSION:-1.1.1}%f%b"
   print -P " %F{$AP_C_GRAY}──────────────────────────────────────────────────%f"
 
   # System Status

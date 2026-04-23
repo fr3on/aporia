@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 
-# Verification tests for Aporia Plugin System (v1.1.0)
+# Verification tests for Aporia Plugin System (v1.1.1)
 # Usage: zsh tests/test_plugins.zsh
 
 SOURCE_DIR=$(cd "$(dirname "$0")/.." && pwd)
