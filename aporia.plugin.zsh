@@ -476,6 +476,17 @@ _aporia_inspect_dump() {
   fi
   print -P "  %F{$c_dim}│%f %F{$c_lab}OS/Distro:%f   %F{$c_dim}$os_info%f"
   print -P "  %F{$c_dim}│%f %F{$c_lab}Session PID:%f %F{$c_dim}$$%f"
+
+  # [6] History Status
+  print -P "\n %F{$c_sub}󰋚 History Intelligence%f"
+  local h_file="${HISTFILE:-None}"
+  local h_size="${HISTSIZE:-0}"
+  local h_save="${SAVEHIST:-0}"
+  local h_count=$(fc -l -1 | awk '{print $1}' 2>/dev/null || echo "0")
+  
+  print -P "  %F{$c_dim}│%f %F{$c_lab}File:%f        %F{$c_val}$h_file%f"
+  print -P "  %F{$c_dim}│%f %F{$c_lab}Size/Save:%f   %F{$c_val}$h_size / $h_save%f"
+  print -P "  %F{$c_dim}│%f %F{$c_lab}Commands:%f    %F{$c_val}$h_count entries%f"
   
   print -P "\n %F{$c_dim}Aporia Forensic Analysis Complete.%f\n"
 }
