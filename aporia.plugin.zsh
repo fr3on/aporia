@@ -391,7 +391,7 @@ _aporia_inspect_dump() {
   local c_dim=$AP_C_GRAY
 
   # Header
-  print -P "\n %F{$AP_C_ORANGE}󰂚%f %B%F{$c_head}APORIA INTELLIGENCE%f%b %F{$c_dim}— Forensic Context Analysis%f"
+  print -P "\n %F{$AP_C_ORANGE}󰂚%f %B%F{$c_head}APORIA%f%b %F{$c_dim}— Context%f"
   print -P " %F{$c_dim}──────────────────────────────────────────────────────────────────%f"
 
   # [1] Project & Directory
@@ -485,9 +485,7 @@ _aporia_inspect_dump() {
   print -P "  %F{$c_dim}│%f %F{$c_lab}File:%f        %F{$c_val}$h_file%f"
   print -P "  %F{$c_dim}│%f %F{$c_lab}Size/Save:%f   %F{$c_val}$h_size / $h_save%f"
   print -P "  %F{$c_dim}│%f %F{$c_lab}Commands:%f    %F{$c_val}$h_count entries%f"
-  
-  print -P "\n %F{$c_dim}Aporia Forensic Analysis Complete.%f\n"
-}
+  }
 
 aporia() {
   local cmd=$1
