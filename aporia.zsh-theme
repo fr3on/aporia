@@ -378,10 +378,11 @@ fi
 #  HISTORY & INTERACTION (Professional Defaults)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 _ap_history_setup() {
-  # Only set if not already configured by user
-  export HISTFILE="${HISTFILE:-$HOME/.zsh_history}"
-  export HISTSIZE="${HISTSIZE:-10000}"
-  export SAVEHIST="${SAVEHIST:-10000}"
+  # Only set if not already configured to a useful value
+  # Note: many default distros set SAVEHIST=0 or HISTSIZE=30, which breaks persistence.
+  [[ -z $HISTFILE || $HISTFILE == "$HOME" ]] && export HISTFILE="$HOME/.zsh_history"
+  [[ ${HISTSIZE:-0} -lt 1000 ]] && export HISTSIZE=10000
+  [[ ${SAVEHIST:-0} -lt 1000 ]] && export SAVEHIST=10000
 
   # Sensible history options for a high-end environment
   setopt APPEND_HISTORY          # Append to history file instead of overwriting
@@ -626,11 +627,8 @@ _ap_render_prompt() {
   local last_exit=$_ap_last_exit
   local LEFT="" RIGHT=""
 
-  # [1] OS Branding (Always first for normal users)
-  # For root (UID 0), this is redundant as the prompt character itself becomes the OS icon
-  if [[ $UID -ne 0 && $EUID -ne 0 ]]; then
-    LEFT+="%F{$AP_C_GRAY}${_AP_ICO_OS} %f"
-  fi
+  # [1] OS Branding (Always first)
+  LEFT+="%F{$AP_C_GRAY}${_AP_ICO_OS} %f"
 
   # [2] SSH and User context
   if (( AP_SHOW_SSH )) && [[ -n $SSH_CONNECTION || -n $SSH_CLIENT ]]; then
