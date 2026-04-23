@@ -450,6 +450,13 @@ _aporia_inspect_dump() {
   local venv=$(_ap_venv_info 2>/dev/null || echo "None")
   local kube=$(command kubectl config current-context 2>/dev/null || echo "None")
   
+  local cpanel="None"
+  if [[ -d /usr/local/cpanel ]]; then
+    cpanel=$(/usr/local/cpanel/cpanel -V 2>/dev/null || echo "Active")
+  elif [[ -d $HOME/.cpanel ]]; then
+    cpanel="User-level"
+  fi
+  
   # Robust IP detection for macOS and Linux
   local local_ip="unknown"
   if (( $+commands[ip] )); then
@@ -461,6 +468,7 @@ _aporia_inspect_dump() {
   print -P "  %F{$c_dim}│%f %F{$c_lab}Container:%f  %F{$c_val}${dkr:-default}%f"
   print -P "  %F{$c_dim}│%f %F{$c_lab}VirtualEnv:%f %F{$c_val}${venv:-None}%f"
   print -P "  %F{$c_dim}│%f %F{$c_lab}Kubernetes:%f %F{$c_val}$kube%f"
+  print -P "  %F{$c_dim}│%f %F{$c_lab}cPanel:%f     %F{$c_val}$cpanel%f"
   print -P "  %F{$c_dim}│%f %F{$c_lab}Local IP:%f   %F{$c_val}${local_ip:-unknown}%f"
 
   # [5] Performance & State
