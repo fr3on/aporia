@@ -476,7 +476,7 @@ _aporia_inspect_dump() {
   print -P "  %F{$c_dim}│%f %F{$c_lab}Session PID:%f %F{$c_dim}$$%f"
 
   # [6] History Status
-  print -P "\n %F{$c_sub}󰋚 History Intelligence%f"
+  print -P "\n %F{$c_sub}󰋚 History%f"
   local h_file="${HISTFILE:-None}"
   local h_size="${HISTSIZE:-0}"
   local h_save="${SAVEHIST:-0}"
