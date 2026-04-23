@@ -16,10 +16,10 @@ Aporia isn't just a prompt; it's a **context-aware environment**. It adapts dyna
 
 ### Core Features
 *   **Asynchronous Prompt Engine**: Native non-blocking background workers (`zle -F`) for instant terminal snappiness.
-*   **Theme Presets**: Switch between `deep_blue`, `light`, and `amber` color palettes via `AP_THEME`.
+*   **Theme Presets**: Switch between `deep_blue`, `light`, `amber`, `crimson_void`, and `forest_matrix`.
 *   **Adaptive Branding**: Official high-fidelity icons for macOS, Debian, Ubuntu, Arch, and more.
 *   **Polyglot Awareness**: Real-time project detection for **Go, Rust, Python, Node, Ruby, PHP, Java, and C++**.
-*   **Contextual Intelligence**: New Git stash tracking and dedicated segments for Virtual Environments and Docker.
+*   **Forensic Intelligence**: Dedicated modules for **VPN detection, Operational Target tracking, and Cloud Identity**.
 *   **Aporia Essentials**: Built-in support for ghost-text **Autosuggestions** and live **Syntax Highlighting**.
 
 
@@ -61,6 +61,16 @@ brew install aporia
 | **Zplug** | `zplug "fr3on/aporia", as:theme` |
 
 
+## The Aporia CLI
+
+Aporia includes a built-in management utility to control your environment:
+
+*   **`aporia theme <name>`**: Instantly switch between color schemes (`amber`, `crimson_void`, etc.).
+*   **`aporia info`**: Show the forensic dashboard with system health and plugin status.
+*   **`aporia inspect`**: Dump raw contextual data for debugging segment logic.
+*   **`aporia list`**: View all available and active forensic plugins.
+
+
 ## Plugin System
 
 Aporia features a modular plugin system that keeps your prompt fast while giving you the tools you need. Plugins are opt-in and handled via the `AP_PLUGINS` array.
@@ -68,43 +78,26 @@ Aporia features a modular plugin system that keeps your prompt fast while giving
 > [!TIP]
 > **New to Aporia plugins?** Check out our **[Detailed Plugin Guide (with examples)](PLUGINS.md)** to see how each feature works!
 
-### Quick Start
-The easiest way to enable features is to use the built-in activation command:
-```zsh
-aporia-activate-plugin <name>
-```
-
-Alternatively, you can manually define the `AP_PLUGINS` array in your `~/.zshrc` before the theme is sourced:
-```zsh
-AP_PLUGINS=(sudo docker-ctx fast-syntax-highlighting)
-source ~/.aporia.zsh-theme
-```
-
 ### Available Plugins
 
-| Plugin | Description | Depends on | Install |
-|---|---|---|---|
-| `history-substring-search` | `↑`/`↓` searches history by typed prefix | none | `aporia-install-plugin history-substring-search` |
-| `autopair` | Auto-closes `"`, `'`, `(`, `[`, `` ` `` | none | `aporia-install-plugin autopair` |
-| `you-should-use` | Reminds you when a shorter alias exists | none | `aporia-install-plugin you-should-use` |
-| `fast-syntax-highlighting` | Drop-in FSH replacement (faster, themeable) | none | `aporia-install-plugin fast-syntax-highlighting` |
-| `fzf-tab` | Replaces tab completion menu with fzf | `fzf` | `aporia-install-plugin fzf-tab` |
-| `fzf-history` | Replaces `Ctrl+R` with fzf history browser | `fzf` | `aporia-install-plugin fzf-history` |
-| `docker-ctx` | Shows Docker context in prompt (no subprocess) | none | bundled |
-| `kube-ctx` | Shows kubectl context:namespace (no kubectl) | `kubectl` on PATH | bundled |
-| `aws-profile` | Shows `$AWS_PROFILE` + region, red on prod | none | bundled |
-| `proxmox` | Detects Proxmox Host nodes and Guest VMs | none | bundled |
-| `autoswitch-venv` | Auto-activates virtualenv on `cd` | none | `aporia-install-plugin autoswitch-venv` |
-| `nix-shell` | Shows active Nix/devenv shell | none | bundled |
-| `forgit` | `fzf`-powered interactive `git` workflows | `fzf`, `git` | `aporia-install-plugin forgit` |
-| `sudo` | Double `ESC` → prepend `sudo` | none | bundled |
+| Plugin | Description | Type |
+|---|---|---|
+| `vpn-status` | Real-time detection of Tailscale, Mullvad, and WireGuard tunnels | **Forensic** |
+| `target` | Sets an operational scope (IP/Host) to prevent command leakage | **Forensic** |
+| `telemetry` | Dynamic CPU/RAM monitor (alerts only during high load) | **Forensic** |
+| `azure-ctx` | Shows active Azure Subscription and Resource Group | **Cloud** |
+| `gcp-ctx` | Shows active Google Cloud Project and Identity | **Cloud** |
+| `gh-context` | Tracks GitHub CLI identity and repository context | **Cloud** |
+| `docker-ctx` | Shows Docker context in prompt (no subprocess) | **Infra** |
+| `kube-ctx` | Shows kubectl context:namespace (no kubectl) | **Infra** |
+| `fast-syntax-highlighting` | Drop-in FSH replacement (faster, themeable) | **Essential** |
+| `fzf-tab` | Replaces tab completion menu with fzf | **Utility** |
 
-### Plugin Management
-*   **`aporia-install-plugin <name>`**: Installs a third-party plugin from its upstream repository.
-*   **`aporia-activate-plugin <name>`**: Installs (if missing) and activates a plugin in your current session and `~/.zshrc`.
-*   **`aporia-activate-all`**: Automatically activates all plugins currently installed on your system.
-*   **`aporia-update-plugins`**: Pulls the latest changes for all your installed plugins.
-*   **`aporia-list-plugins`**: Shows which plugins are installed and which are currently active.
+### Management Commands
+*   **`aporia install <p>`**: Downloads a third-party plugin.
+*   **`aporia activate <p>`**: Enables a plugin and saves it to your `~/.zshrc`.
+*   **`aporia activate-all`**: Activates all installed plugins.
+*   **`aporia update`**: Pulls the latest changes for all your installed plugins.
 
 
 ## Configuration
@@ -112,7 +105,7 @@ Override these variables in your `~/.zshrc` *before* the theme is sourced to cus
 
 | Variable | Default | Description |
 | :--- | :--- | :--- |
-| `AP_THEME` | `deep_blue` | Color preset: `deep_blue`, `light`, or `amber` |
+| `AP_THEME` | `deep_blue` | Color preset: `deep_blue`, `light`, `amber`, `crimson_void`, `forest_matrix` |
 | `AP_USE_NERD_FONT` | `1` | Set to `0` for fallback Unicode characters |
 | `AP_ASCII_FALLBACK` | `0` | Set to `1` to use ASCII separators instead of Nerd Fonts |
 | `AP_SHOW_SSH` | `1` | Show SSH context (user@host) |
@@ -122,7 +115,6 @@ Override these variables in your `~/.zshrc` *before* the theme is sourced to cus
 | `AP_EXEC_TIME_THRESHOLD` | `2` | Minimum duration (s) to show timing |
 | `AP_SHOW_EXIT_CODE` | `1` | Show non-zero exit codes |
 | `AP_SHOW_TIME` | `1` | Show the right-side clock |
-| `AP_DIR_DEPTH` | `3` | Number of directory segments to show |
 
 
 ## Troubleshooting
