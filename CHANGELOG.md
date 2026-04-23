@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.3] - The Auto-Setup Update
+This patch introduces a smoother installation experience for Homebrew users and minor architecture refinements.
+
+### Highlights
+*   **Brew Auto-Setup**: Introduced the `aporia-setup` command for Homebrew users to automatically configure their `.zshrc`.
+*   **Identity Variable**: Added `ZSH_THEME_NAME` for standard identification by shell utilities.
+
+---
+
 ## [1.1.2] - The Architectural Harmony Update
 This major refactor aligns the repository structure and internal logic with the core design principles and architectural standards.
 

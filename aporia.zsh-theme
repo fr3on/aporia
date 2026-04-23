@@ -45,7 +45,7 @@ add-zsh-hook precmd  _ap_build_prompt
 # Note: preexec registration is moved to the end of the file to capture only the command.
 
 # Aporia Version
-export APORIA_VERSION="1.1.2"
+export APORIA_VERSION="1.1.3"
 export ZSH_THEME_NAME="aporia"
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
