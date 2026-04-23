@@ -39,6 +39,11 @@ if [[ -n ${_APORIA_LOADED:-} ]]; then
 fi
 typeset -g _APORIA_LOADED=1
 
+# Essential hooks (precmd must be early to stop timer, preexec must be late to start timer)
+autoload -Uz add-zsh-hook
+add-zsh-hook precmd  _ap_build_prompt
+# Note: preexec registration is moved to the end of the file to capture only the command.
+
 # Aporia Version
 export APORIA_VERSION="1.1.1"
 
@@ -50,14 +55,20 @@ export APORIA_VERSION="1.1.1"
 zmodload zsh/datetime 2>/dev/null
 zmodload zsh/parameter 2>/dev/null
 zmodload zsh/system 2>/dev/null
+zmodload zsh/mathfunc 2>/dev/null
 
 autoload -Uz is-at-least
 
-if is-at-least 5.8 && [[ -n $EPOCHSECONDS ]]; then
+if is-at-least 5.8 && [[ -n $EPOCHREALTIME ]]; then
+  _ap_now() { echo $EPOCHREALTIME }
+elif [[ -n $EPOCHSECONDS ]]; then
   _ap_now() { echo $EPOCHSECONDS }
 else
   _ap_now() { date +%s }
 fi
+# Force float math for time variables
+typeset -g _ap_cmd_start=${_ap_cmd_start:-0}
+typeset -g _ap_last_exec_time=${_ap_last_exec_time:-""}
 
 # Platform detection
 _ap_is_macos() { [[ $(uname -s) == "Darwin" ]]; }
@@ -211,7 +222,7 @@ AP_SHOW_SSH=${AP_SHOW_SSH:-1}         # user@host (SSH sessions only)
 AP_SHOW_GIT=${AP_SHOW_GIT:-1}         # git branch + dirty/ahead/behind
 AP_SHOW_LANGS=${AP_SHOW_LANGS:-1}     # python / node / rust versions
 AP_SHOW_EXEC_TIME=${AP_SHOW_EXEC_TIME:-1}   # execution time (> threshold)
-AP_EXEC_TIME_THRESHOLD=${AP_EXEC_TIME_THRESHOLD:-2}   # seconds
+AP_EXEC_TIME_THRESHOLD=${AP_EXEC_TIME_THRESHOLD:-0}   # seconds (0 = show for all commands)
 AP_SHOW_EXIT_CODE=${AP_SHOW_EXIT_CODE:-1}   # non-zero exit codes
 AP_SHOW_TIME=${AP_SHOW_TIME:-1}       # clock on right
 AP_DIR_DEPTH=${AP_DIR_DEPTH:-3}       # how many path segments to show
@@ -514,57 +525,58 @@ _ap_git_info() {
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  LANGUAGE VERSIONS  (project-aware, lazy)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Optimized _ap_lang_info: single pass up the directory tree
 _ap_lang_info() {
-  # Language versions only (venv handled separately)
   local parts=()
+  local dir=$PWD
+  local -A found
 
-  # Node — only inside a node project
-  if _ap_find_up "package.json" ".node-version" ".nvmrc"; then
-    local nv
-    nv=$(command node --version 2>/dev/null) && \
-      parts+=("%F{$AP_C_GREEN}${_AP_ICO_NODE} $nv%f")
+  # Walk up the tree once and collect project indicators
+  while true; do
+    # Node
+    [[ -z ${found[node]} ]] && [[ -f "$dir/package.json" || -f "$dir/.node-version" || -f "$dir/.nvmrc" ]] && found[node]=1
+    # Rust
+    [[ -z ${found[rust]} ]] && [[ -f "$dir/Cargo.toml" ]] && found[rust]=1
+    # Go
+    [[ -z ${found[go]} ]] && [[ -f "$dir/go.mod" || -f "$dir/go.sum" ]] && found[go]=1
+    # Ruby
+    [[ -z ${found[ruby]} ]] && [[ -f "$dir/Gemfile" || -f "$dir/.ruby-version" ]] && found[ruby]=1
+    # PHP
+    [[ -z ${found[php]} ]] && [[ -f "$dir/composer.json" || -f "$dir/index.php" ]] && found[php]=1
+    # Java
+    [[ -z ${found[java]} ]] && [[ -f "$dir/pom.xml" || -f "$dir/build.gradle" || -f "$dir/.java-version" ]] && found[java]=1
+    # C++
+    if [[ -z ${found[cpp]} ]]; then
+      # Faster glob check for C++ files
+      local cpp_files=("$dir"/(CMakeLists.txt|Makefile|meson.build|build.ninja|*.cpp|*.cxx|*.cc|*.c++)(N[1]))
+      [[ ${#cpp_files[@]} -gt 0 ]] && found[cpp]=1
+    fi
+
+    [[ $dir == "/" || $dir == "$HOME" ]] && break
+    dir=${dir:h}
+  done
+
+  # Run version commands only for found projects
+  if [[ -n ${found[node]} ]]; then
+    local nv; nv=$(command node --version 2>/dev/null) && parts+=("%F{$AP_C_GREEN}${_AP_ICO_NODE} $nv%f")
   fi
-
-  # Rust — only inside a cargo project
-  if _ap_find_up "Cargo.toml"; then
-    local rv
-    rv=$(command rustc --version 2>/dev/null | awk '{print $2}') && \
-      [[ -n $rv ]] && parts+=("%F{$AP_C_ORANGE}${_AP_ICO_RUST} $rv%f")
+  if [[ -n ${found[rust]} ]]; then
+    local rv; rv=$(command rustc --version 2>/dev/null | awk '{print $2}') && [[ -n $rv ]] && parts+=("%F{$AP_C_ORANGE}${_AP_ICO_RUST} $rv%f")
   fi
-
-  # Go — only inside a go project
-  if _ap_find_up "go.mod" "go.sum"; then
-    local gv
-    gv=$(command go version 2>/dev/null | awk '{print $3}') && \
-      [[ -n $gv ]] && parts+=("%F{$AP_C_CYAN}${_AP_ICO_GO} ${gv#go}%f")
+  if [[ -n ${found[go]} ]]; then
+    local gv; gv=$(command go version 2>/dev/null | awk '{print $3}') && [[ -n $gv ]] && parts+=("%F{$AP_C_CYAN}${_AP_ICO_GO} ${gv#go}%f")
   fi
-
-  # Ruby — only inside a ruby project
-  if _ap_find_up "Gemfile" ".ruby-version"; then
-    local rbv
-    rbv=$(command ruby -e 'puts RUBY_VERSION' 2>/dev/null) && \
-      [[ -n $rbv ]] && parts+=("%F{$AP_C_RED}${_AP_ICO_RUBY} $rbv%f")
+  if [[ -n ${found[ruby]} ]]; then
+    local rbv; rbv=$(command ruby -e 'puts RUBY_VERSION' 2>/dev/null) && [[ -n $rbv ]] && parts+=("%F{$AP_C_RED}${_AP_ICO_RUBY} $rbv%f")
   fi
-
-  # PHP — only inside a php project
-  if _ap_find_up "composer.json" "index.php"; then
-    local phpv
-    phpv=$(command php -v 2>/dev/null | head -n 1 | awk '{print $2}') && \
-      [[ -n $phpv ]] && parts+=("%F{$AP_C_PURPLE}${_AP_ICO_PHP} $phpv%f")
+  if [[ -n ${found[php]} ]]; then
+    local phpv; phpv=$(command php -v 2>/dev/null | head -n 1 | awk '{print $2}') && [[ -n $phpv ]] && parts+=("%F{$AP_C_PURPLE}${_AP_ICO_PHP} $phpv%f")
   fi
-
-  # Java — only inside a java project
-  if _ap_find_up "pom.xml" "build.gradle" ".java-version"; then
-    local jv
-    jv=$(command java -version 2>&1 | head -n 1 | awk -F '"' '{print $2}') && \
-      [[ -n $jv ]] && parts+=("%F{$AP_C_WHITE}${_AP_ICO_JAVA} $jv%f")
+  if [[ -n ${found[java]} ]]; then
+    local jv; jv=$(command java -version 2>&1 | head -n 1 | awk -F '"' '{print $2}') && [[ -n $jv ]] && parts+=("%F{$AP_C_WHITE}${_AP_ICO_JAVA} $jv%f")
   fi
-
-  # C++ — only inside a C++ project
-  if _ap_find_up "CMakeLists.txt" "Makefile" "meson.build" "build.ninja" "*.cpp" "*.cxx" "*.cc" "*.c++"; then
-    local cppv
-    cppv=$(command c++ --version 2>/dev/null | head -n 1 | awk '{print $NF}') &&
-      [[ -n $cppv ]] && parts+=("%F{$AP_C_BLUE}${_AP_ICO_CPP} $cppv%f")
+  if [[ -n ${found[cpp]} ]]; then
+    local cppv; cppv=$(command c++ --version 2>/dev/null | head -n 1 | awk '{print $NF}') && [[ -n $cppv ]] && parts+=("%F{$AP_C_BLUE}${_AP_ICO_CPP} $cppv%f")
   fi
 
   local out="${(j: :)parts}"
@@ -642,27 +654,38 @@ _ap_docker_info() {
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  EXECUTION TIME
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-typeset -g _ap_cmd_start=0
-typeset -g _ap_last_exec_time=""
+# (Variables are initialized at the top of the file to support re-sourcing)
 
 _ap_preexec() {
+  local LC_NUMERIC=C
   _ap_cmd_start=$(_ap_now)
 }
 
 _ap_calc_exec_time() {
-  _ap_last_exec_time=""
-  [[ $_ap_cmd_start -eq 0 ]] && return
-  local elapsed=$(( $(_ap_now) - _ap_cmd_start ))
+  # If timer is 0, it means we already calculated time for the last command.
+  (( _ap_cmd_start == 0 )) && return
+  
+  local LC_NUMERIC=C
+  local now=$(_ap_now)
+  local elapsed=$(( now - _ap_cmd_start ))
   _ap_cmd_start=0
-  (( elapsed < AP_EXEC_TIME_THRESHOLD )) && return
+  
+  # Check threshold. If AP_EXEC_TIME_THRESHOLD is 0, we show it for everything.
+  local threshold=${AP_EXEC_TIME_THRESHOLD:-0}
+  if (( threshold > 0 )); then
+    (( elapsed < threshold )) && { _ap_last_exec_time=""; return; }
+  fi
 
   local out
   if   (( elapsed >= 3600 )); then
-    out="$(( elapsed/3600 ))h $(( elapsed%3600/60 ))m $(( elapsed%60 ))s"
+    out="$(( int(elapsed/3600) ))h $(( int(elapsed%3600/60) ))m $(( int(elapsed%60) ))s"
   elif (( elapsed >= 60 )); then
-    out="$(( elapsed/60 ))m $(( elapsed%60 ))s"
+    out="$(( int(elapsed/60) ))m $(( int(elapsed%60) ))s"
+  elif (( elapsed >= 1 )); then
+    printf -v out "%.1fs" $elapsed
   else
-    out="${elapsed}s"
+    # For sub-second commands, show 2 decimal places
+    printf -v out "%.2fs" $elapsed
   fi
   _ap_last_exec_time="${_AP_ICO_EXEC} $out"
 }
@@ -672,18 +695,48 @@ _ap_calc_exec_time() {
 #  MAIN PROMPT BUILDER  (runs every precmd)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 _ap_build_prompt() {
-  # precmd hook: capture mutable state, then render.
-  # Must be the first line so $? refers to the previous command.
   typeset -g _ap_last_exit=$?
   _ap_calc_exec_time
   
-  # Request async updates (idempotent)
+  # [1] Git Async Request (with index-mtime caching)
   if (( AP_SHOW_GIT )); then
-    _ap_async_request "git" "_ap_git_info"
+    local git_root
+    git_root=$(command git rev-parse --git-dir 2>/dev/null)
+    if [[ -n $git_root ]]; then
+      local mtime=""
+      if [[ -f "$git_root/index" ]]; then
+        # Use zsh/stat if available for speed
+        zmodload zsh/stat 2>/dev/null
+        if (( $+functions[zstat] )); then
+          mtime=$(zstat +mtime "$git_root/index")
+        else
+          mtime=$(date -r "$git_root/index" +%s 2>/dev/null)
+        fi
+      fi
+      
+      # Only request if directory changed OR git index changed
+      if [[ ${_AP_ASYNC_PWDS[git]:-} != $PWD || ${_AP_GIT_MTIME:-} != $mtime ]]; then
+        _ap_async_request "git" "_ap_git_info"
+        _AP_GIT_MTIME=$mtime
+      fi
+    else
+       _AP_ASYNC_DATA[git]="NONE"
+    fi
   fi
+
+  # [2] Lang Async Request (directory-bound)
   if (( AP_SHOW_LANGS )); then
-    _ap_async_request "lang" "_ap_lang_info"
+    if [[ ${_AP_ASYNC_PWDS[lang]:-} != $PWD ]]; then
+      _ap_async_request "lang" "_ap_lang_info"
+    fi
   fi
+
+  # [3] Registered Plugin Async Requests
+  local p_key
+  for p_key in "${(@k)_AP_ASYNC_PLUGINS}"; do
+    local p_cmd=${_AP_ASYNC_PLUGINS[$p_key]}
+    _ap_async_request "$p_key" "$p_cmd"
+  done
 
   _ap_render_prompt
 }
@@ -757,8 +810,8 @@ _ap_render_prompt() {
     RIGHT+="%F{$AP_C_RED}${_AP_ICO_ERR} $last_exit  %f"
   fi
 
-  # [2] Execution time (hide if < 60 chars)
-  if (( AP_SHOW_EXEC_TIME )) && [[ -n $_ap_last_exec_time ]] && (( width > 60 )); then
+  # [2] Execution time (hide if < 40 chars)
+  if (( AP_SHOW_EXEC_TIME )) && [[ -n $_ap_last_exec_time ]] && (( ${COLUMNS:-80} > 40 )); then
     RIGHT+="%F{$AP_C_YELLOW}${_ap_last_exec_time}  %f"
   fi
 
@@ -789,6 +842,15 @@ _ap_render_prompt() {
   if (( AP_SHOW_TIME )) && (( width > 80 )); then
     RIGHT+="%F{$AP_C_GRAY}${_AP_ICO_TIME} %D{%H:%M}%f%k%b"
   fi
+
+  # [5] Plugin Async Segments (Right Side)
+  local p_key
+  for p_key in "${(@k)_AP_ASYNC_PLUGINS}"; do
+    local p_val=${_AP_ASYNC_DATA[$p_key]:-}
+    if [[ -n $p_val && $p_val != "NONE" ]]; then
+      RIGHT=" $p_val $RIGHT"
+    fi
+  done
 
   PROMPT="$LEFT%f%k%b"
   [[ $TERM_PROGRAM == "iTerm.app" ]] && PROMPT+=$'%{\e]133;B\a%}'
@@ -837,6 +899,13 @@ _ap_async_request() {
   zle -F $fd _ap_async_handler
 }
 
+# Plugin registration for async segments
+typeset -gA _AP_ASYNC_PLUGINS
+aporia_register_async() {
+  local key=$1 cmd=$2
+  _AP_ASYNC_PLUGINS[$key]=$cmd
+}
+
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  ZSH HOOKS & OPTIONS
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -846,7 +915,7 @@ _ap_async_request() {
 autoload -Uz add-zsh-hook
 add-zsh-hook precmd _ap_history_setup
 add-zsh-hook precmd _ap_build_prompt
-add-zsh-hook preexec _ap_preexec
+# (preexec registration is handled at the very end of the file)
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  TITLE BAR  (iTerm2, GNOME Terminal, kitty, etc.)
@@ -904,3 +973,4 @@ _ap_load_plugins_system() {
 }
 
 _ap_load_plugins_system
+add-zsh-hook preexec _ap_preexec

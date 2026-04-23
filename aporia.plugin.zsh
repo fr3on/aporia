@@ -514,11 +514,13 @@ _aporia_inspect_dump() {
   local h_file="${HISTFILE:-None}"
   local h_size="${HISTSIZE:-0}"
   local h_save="${SAVEHIST:-0}"
-  local h_count=$(fc -l -1 | awk '{print $1}' 2>/dev/null || echo "0")
+  local h_count=$(fc -l -1 2>/dev/null | awk '{print $1}' || echo "0")
+  # Fix: ensure h_count is at least 0 and handle potential errors
+  [[ $h_count == "0" ]] && h_count=$(wc -l < "$h_file" 2>/dev/null | awk '{print $1}')
   
   print -P "  %F{$c_dim}│%f %F{$c_lab}File:%f        %F{$c_val}$h_file%f"
   print -P "  %F{$c_dim}│%f %F{$c_lab}Size/Save:%f   %F{$c_val}$h_size / $h_save%f"
-  print -P "  %F{$c_dim}│%f %F{$c_lab}Commands:%f    %F{$c_val}$h_count entries%f"
+  print -P "  %F{$c_dim}│%f %F{$c_lab}Commands:%f    %F{$c_val}${h_count:-0} entries%f"
   }
 
 aporia() {

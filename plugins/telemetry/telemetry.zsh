@@ -18,31 +18,32 @@ _ap_telemetry_segment() {
   local out=""
 
   # [1] CPU Load Detection
-  local _ap_nproc=1
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    _ap_nproc=$(sysctl -n hw.ncpu 2>/dev/null || echo 1)
-    cpu_load=$(sysctl -n vm.loadavg 2>/dev/null | awk '{print $2}' | cut -d. -f1)
+    local loadavg=$(sysctl -n vm.loadavg 2>/dev/null)
+    [[ -n $loadavg ]] && cpu_load=$(echo $loadavg | awk '{print $2}' | cut -d. -f1)
+    local nproc=$(sysctl -n hw.ncpu 2>/dev/null || echo 1)
+    cpu_load=$(( cpu_load * 100 / nproc ))
   else
-    _ap_nproc=$(nproc 2>/dev/null || echo 1)
     cpu_load=$(awk '{print $1}' /proc/loadavg 2>/dev/null | cut -d. -f1)
+    local nproc=$(nproc 2>/dev/null || echo 1)
+    cpu_load=$(( cpu_load * 100 / nproc ))
   fi
   cpu_load=${cpu_load:-0}
-  cpu_load=$(( cpu_load * 100 / _ap_nproc ))
 
   # [2] RAM Load Detection
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    local page_size=$(vm_stat 2>/dev/null | grep "page size of" | awk '{print $(NF-1)}')
-    local free_pages=$(vm_stat 2>/dev/null | grep "Pages free" | awk '{print $NF}' | tr -d '.')
-    local inactive_pages=$(vm_stat 2>/dev/null | grep "Pages inactive" | awk '{print $NF}' | tr -d '.')
-    local total_mem=$(sysctl -n hw.memsize 2>/dev/null || echo 0)
+    local page_size=$(vm_stat 2>/dev/null | awk '/page size of/{print $(NF-1)}')
+    local free=$(vm_stat 2>/dev/null | awk '/Pages free/{print $NF}' | tr -d '.')
+    local inactive=$(vm_stat 2>/dev/null | awk '/Pages inactive/{print $NF}' | tr -d '.')
+    local total=$(sysctl -n hw.memsize 2>/dev/null || echo 0)
     
-    if [[ -n $page_size && -n $free_pages && $total_mem -gt 0 ]]; then
-      local used_mem=$(( total_mem - (free_pages + ${inactive_pages:-0}) * page_size ))
-      ram_load=$(( used_mem * 100 / total_mem ))
+    if [[ -n $page_size && -n $free && $total -gt 0 ]]; then
+      local used=$(( total - (free + ${inactive:-0}) * page_size ))
+      ram_load=$(( used * 100 / total ))
     fi
   else
-    local total=$(grep MemTotal /proc/meminfo 2>/dev/null | awk '{print $2}')
-    local avail=$(grep MemAvailable /proc/meminfo 2>/dev/null | awk '{print $2}')
+    local total=$(awk '/MemTotal/{print $2}' /proc/meminfo 2>/dev/null)
+    local avail=$(awk '/MemAvailable/{print $2}' /proc/meminfo 2>/dev/null)
     if [[ -n $total && -n $avail && $total -gt 0 ]]; then
       ram_load=$(( (total - avail) * 100 / total ))
     fi
@@ -64,16 +65,19 @@ _ap_telemetry_segment() {
     out+="%F{$color}${_AP_ICO_RAM} ${ram_load}%%%f "
   fi
 
-  echo $out
+  echo "${out#" "}"
 }
 
-_ap_telemetry_precmd() {
-  local seg=$(_ap_telemetry_segment)
-  if [[ -n $seg ]]; then
-    RPROMPT="${seg}${RPROMPT:-}"
-  fi
-}
-
-# Register the hook
-autoload -Uz add-zsh-hook
-add-zsh-hook precmd _ap_telemetry_precmd
+# Register with Aporia's async engine instead of a sync precmd hook
+if (( $+functions[aporia_register_async] )); then
+  aporia_register_async "telemetry" "_ap_telemetry_segment"
+else
+  # Fallback for older theme versions
+  autoload -Uz add-zsh-hook
+  _ap_telemetry_precmd() {
+    local seg=$(_ap_telemetry_segment)
+    [[ -n $seg ]] && RPROMPT="${seg}${RPROMPT:-}"
+  }
+  add-zsh-hook -d precmd _ap_telemetry_precmd 2>/dev/null
+  add-zsh-hook precmd _ap_telemetry_precmd
+fi
