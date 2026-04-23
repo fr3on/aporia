@@ -406,8 +406,31 @@ _aporia_inspect_dump() {
     version=$(grep -m1 "\"version\"" package.json | cut -d'"' -f4 2>/dev/null)
   fi
   [[ $version != "unknown" ]] && print -P "  %F{$c_dim}│%f %F{$c_lab}Version:%f     %F{$AP_C_YELLOW}v$version%f"
+
+  # [2] Async Intelligence (Consolidated here)
+  local key val count=0
+  for key val in "${(@kv)_AP_ASYNC_DATA}"; do
+    ((count++))
+    if [[ $key == "lang" ]]; then
+      if [[ $val == "NONE" || -z $val ]]; then
+        continue # Skip "None" for lang in the tree
+      fi
+      print -P "  %F{$c_dim}├─%f %F{$c_lab}Languages:%f"
+      local p
+      for p in ${(s:%f :)val}; do
+        [[ -z ${p// /} ]] && continue
+        local clean_p=$(echo "$p" | sed -E 's/%[FfKkBbUu](\{[^}]*\})?//g')
+        print -P "  %F{$c_dim}│%f   %F{$c_dim}•%f %F{$c_val}${clean_p#" "}%f"
+      done
+    elif [[ $key == "git" ]]; then
+       # The detailed Git Engine section handles this better, but we show the segment too
+       local clean_val=$(echo "$val" | sed -E 's/%[FfKkBbUu](\{[^}]*\})?//g')
+       clean_val=${clean_val##[0-9]# }
+       print -P "  %F{$c_dim}├─%f %F{$c_lab}Prompt:%f    %F{$c_val}${clean_val#" "}%f"
+    fi
+  done
   
-  # [2] Git Details (if in repo)
+  # [3] Git Details (if in repo)
   if command git rev-parse --is-inside-work-tree &>/dev/null; then
     print -P "  %F{$c_dim}│%f"
     print -P "  %F{$c_dim}├─%f %F{$c_sub}󰊢 Git Engine%f"
@@ -419,31 +442,6 @@ _aporia_inspect_dump() {
     print -P "  %F{$c_dim}│%f  %F{$c_lab}Upstream:%f %F{$c_val}${upstream#refs/heads/}%f"
     print -P "  %F{$c_dim}│%f  %F{$c_lab}Stashed:%f  %F{$c_val}$(git stash list 2>/dev/null | wc -l | tr -d ' ') layers%f"
   fi
-
-  # [3] Async Data (Cleaned)
-  print -P "\n %F{$c_sub}󰑭 Async Cache Intelligence%f"
-  local key val count=0
-  for key val in "${(@kv)_AP_ASYNC_DATA}"; do
-    ((count++))
-    if [[ $key == "lang" ]]; then
-      if [[ $val == "NONE" || -z $val ]]; then
-        print -P "  %F{$c_dim}├─%f %F{$c_lab}${(r:10:)key}:%f %F{$c_dim}None%f"
-        continue
-      fi
-      print -P "  %F{$c_dim}├─%f %F{$c_lab}${(r:10:)key}:%f"
-      local p
-      for p in ${(s:%f :)val}; do
-        [[ -z ${p// /} ]] && continue
-        local clean_p=$(echo "$p" | sed -E 's/%[FfKkBbUu](\{[^}]*\})?//g')
-        print -P "  %F{$c_dim}│%f   %F{$c_dim}•%f %F{$c_val}${clean_p#" "}%f"
-      done
-    else
-      local clean_val=$(echo "$val" | sed -E 's/%[FfKkBbUu](\{[^}]*\})?//g')
-      [[ $key != "lang" ]] && clean_val=${clean_val##[0-9]# }
-      print -P "  %F{$c_dim}├─%f %F{$c_lab}${(r:10:)key}:%f %F{$c_val}${clean_val#" "}%f"
-    fi
-  done
-  [[ $count -eq 0 ]] && print -P "  %F{$c_dim}└─%f %F{$c_dim}No cached intelligence available.%f"
 
   # [4] Environment Context
   print -P "\n %F{$c_sub}󰟀 Infrastructure Context%f"
