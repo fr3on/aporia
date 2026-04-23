@@ -95,6 +95,35 @@ aporia-activate-plugin <plugin-name>
 - **Example:** `󱘊 PVE Host`
 - **Try This:** Run `aporia-activate-plugin proxmox` while on your Proxmox system to see the branding update.
 
+### `vpn-status`
+**What it does:** Detects active VPN tunnels (Mullvad, Tailscale, WireGuard, OpenVPN).
+- **Example:** `󰖂 Mullvad` or `󰆟 Tailscale`
+- **Try This:** Connect to your VPN and watch the prompt update instantly to reflect your secure tunnel.
+
+### `target`
+**What it does:** Tracks a specific operational target (IP or Domain) to maintain focus.
+- **Command:** `aporia-target <ip/domain>`
+- **Example:** `󰓾 10.0.0.5`
+- **Try This:** Run `aporia-target 192.168.1.100`. The target indicator will appear in your prompt as a persistent reminder. Use `aporia-target --clear` when done.
+
+### `gh-context`
+**What it does:** Displays your active GitHub CLI (`gh`) account.
+- **Example:** `󰊤 fr3on`
+- **Try This:** `gh auth login` to see your identity update in the prompt.
+
+### `azure-ctx`
+**What it does:** Shows your current Azure subscription.
+- **Example:** `󰠅 Production-Sub`
+
+### `gcp-ctx`
+**What it does:** Shows your active Google Cloud project.
+- **Example:** `󱇶 my-forensic-project`
+
+### `telemetry`
+**What it does:** Dynamic system resource monitor (CPU/RAM).
+- **Behavior:** Only appears when load exceeds thresholds (default: CPU > 50%, RAM > 80%).
+- **Visuals:** 󰍛 (CPU) / 󰘚 (RAM)
+
 ---
 
 ## Environment Managers

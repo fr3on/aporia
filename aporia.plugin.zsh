@@ -37,6 +37,12 @@ typeset -gA _AP_PLUGIN_REGISTRY=(
   zsh-syntax-highlighting   "https://github.com/zsh-users/zsh-syntax-highlighting"
   proxmox                   ""   # first-party
   cpanel                    ""   # first-party
+  vpn-status                ""   # first-party
+  target                    ""   # first-party
+  azure-ctx                 ""   # first-party
+  gcp-ctx                   ""   # first-party
+  gh-context                ""   # first-party
+  telemetry                 ""   # first-party
 )
 
 # ── Dependencies: plugin_name → required binary ─────────────
@@ -45,6 +51,9 @@ typeset -gA _AP_PLUGIN_DEPS=(
   fzf-history  "fzf"
   forgit       "fzf"
   kube-ctx     "kubectl"
+  azure-ctx    "az"
+  gcp-ctx      "gcloud"
+  gh-context   "gh"
 )
 
 # ── Loader ───────────────────────────────────────────────────
@@ -331,11 +340,12 @@ _aporia_help() {
   print -P "\n %F{$AP_C_BLUE}Commands:%f"
   print -P "   %F{$AP_C_YELLOW}info%f          Show theme and system status (default)"
   print -P "   %F{$AP_C_YELLOW}list%f          List all available plugins and their status"
+  print -P "   %F{$AP_C_YELLOW}theme <name>%f  Change the current color theme"
   print -P "   %F{$AP_C_YELLOW}install <p>%f   Download and install a plugin"
   print -P "   %F{$AP_C_YELLOW}activate <p>%f  Enable a plugin and add to .zshrc"
   print -P "   %F{$AP_C_YELLOW}activate-all%f  Activate all installed plugins"
   print -P "   %F{$AP_C_YELLOW}update%f        Update all installed plugins"
-  print -P "   %F{$AP_C_YELLOW}inspect%f          Show raw segment data for debugging"
+  print -P "   %F{$AP_C_YELLOW}inspect%f       Show raw segment data for debugging"
   print -P "   %F{$AP_C_YELLOW}help%f          Show this help message\n"
 }
 
@@ -360,6 +370,7 @@ _aporia_dashboard() {
 
   local theme_name=${AP_THEME:-deep_blue}
   print -P "   %F{$AP_C_WHITE}${(r:12:):-Theme}:%f  %F{$AP_C_CYAN}$theme_name%f"
+  print -P "   %F{$AP_C_GRAY}Run 'aporia theme' to see all options.%f"
 
   # Theme Config
   print -P "\n %F{$AP_C_BLUE}Configuration%f"
@@ -371,7 +382,16 @@ _aporia_dashboard() {
   _ap_print_flag "Clock"       ${AP_SHOW_TIME:-1}
 
   # Plugins
-  local active_count=${#AP_PLUGINS[@]}
+  local active_count=0
+  local name
+  for name in "${(@k)_AP_PLUGIN_REGISTRY}"; do
+    if (( ${AP_PLUGINS[(Ie)$name]} )); then
+      ((active_count++))
+    elif [[ $name == "zsh-autosuggestions" || $name == "zsh-syntax-highlighting" ]] && [[ -d "$AP_PLUGIN_DIR/$name" ]]; then
+      ((active_count++))
+    fi
+  done
+
   local total_count=${#_AP_PLUGIN_REGISTRY[@]}
   print -P "\n %F{$AP_C_BLUE}Plugins%f"
   print -P "   %F{$AP_C_WHITE}${(r:12:):-Active}:%f  %F{$AP_C_GREEN}$active_count%f / $total_count"
@@ -474,6 +494,11 @@ _aporia_inspect_dump() {
 
   # [5] Performance & State
   print -P "\n %F{$c_sub}󰄨 System Telemetry%f"
+  
+  # Get live telemetry regardless of thresholds for inspection
+  local t_data=$(_ap_telemetry_segment raw 2>/dev/null)
+  [[ -n $t_data ]] && print -P "  %F{$c_dim}│%f %F{$c_lab}Live Stats:%f  $t_data"
+
   print -P "  %F{$c_dim}│%f %F{$c_lab}Exit Code:%f   %F{${_ap_last_exit:-0}}${_ap_last_exit:-0}%f"
   print -P "  %F{$c_dim}│%f %F{$c_lab}Last Exec:%f   %F{$c_val}${_ap_last_exec_time:-< ${AP_EXEC_TIME_THRESHOLD:-2}s}%f"
   
@@ -508,6 +533,63 @@ aporia() {
       ;;
     update)
       aporia-update-plugins
+      ;;
+    theme)
+      shift
+      local new_theme=$1
+      if [[ -z $new_theme ]]; then
+        print -P "\n %F{$AP_C_BLUE}Available Themes:%f"
+        print -P "   %F{$AP_C_CYAN}deep_blue%f     (Default) Dark, high-contrast"
+        print -P "   %F{$AP_C_CYAN}amber%f         Warm, vintage feel"
+        print -P "   %F{$AP_C_CYAN}light%f         High visibility, light background"
+        print -P "   %F{$AP_C_CYAN}crimson_void%f  Deep reds and blacks (Hacker aesthetic)"
+        print -P "   %F{$AP_C_CYAN}forest_matrix%f Shades of green (Classic digital)"
+        print -P "\n %F{$AP_C_GRAY}Usage: aporia theme <name>%f\n"
+        return 0
+      fi
+      
+      # Validate
+      case "$new_theme" in
+        deep_blue|amber|light|crimson_void|forest_matrix)
+          export AP_THEME="$new_theme"
+          
+          # Persistent change in .zshrc
+          local zrc="$HOME/.zshrc"
+          if [[ -f $zrc ]]; then
+            if grep -q "export AP_THEME=" "$zrc"; then
+              # Update existing
+              perl -pi -e "s/^export AP_THEME=.*/export AP_THEME=$new_theme/" "$zrc"
+            else
+              # Insert before theme source
+              if grep -q "aporia.zsh-theme" "$zrc"; then
+                perl -pi -e "s/^(.*aporia.zsh-theme)/export AP_THEME=$new_theme\n\$1/" "$zrc"
+              else
+                print "\nexport AP_THEME=$new_theme" >> "$zrc"
+              fi
+            fi
+          fi
+          
+          # Apply immediately
+          if (( $+functions[_ap_apply_theme] )); then
+            # Unset color variables to force theme application
+            unset AP_C_BG0 AP_C_BG1 AP_C_BG2 AP_C_BG3 AP_C_WHITE AP_C_BLUE AP_C_GREEN AP_C_YELLOW AP_C_RED AP_C_ORANGE AP_C_PURPLE AP_C_CYAN AP_C_GRAY
+            _ap_apply_theme
+            
+            # Force a re-render of the prompt
+            if (( $+functions[_ap_render_prompt] )); then
+               _ap_render_prompt
+               zle && zle reset-prompt
+            fi
+            print -P "%F{$AP_C_GREEN}[aporia] Theme switched to '$new_theme'.%f"
+          else
+            print -P "%F{$AP_C_GREEN}[aporia] Theme set to '$new_theme' in .zshrc. Reload for changes.%f"
+          fi
+          ;;
+        *)
+          print -P "%F{$AP_C_RED}[aporia] Invalid theme: $new_theme%f"
+          return 1
+          ;;
+      esac
       ;;
     activate)
       shift

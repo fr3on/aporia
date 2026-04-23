@@ -324,49 +324,79 @@ fi
 _ap_apply_theme() {
   case "${AP_THEME:-deep_blue}" in
     light)
-      AP_C_BG0=${AP_C_BG0:-255}        # white
-      AP_C_BG1=${AP_C_BG1:-252}        # light gray
-      AP_C_BG2=${AP_C_BG2:-248}        # silver
-      AP_C_BG3=${AP_C_BG3:-244}        # gray
-      AP_C_WHITE=${AP_C_WHITE:-235}    # dark text
-      AP_C_BLUE=${AP_C_BLUE:-25}       # navy
-      AP_C_GREEN=${AP_C_GREEN:-28}      # dark green
-      AP_C_YELLOW=${AP_C_YELLOW:-136}   # muddy gold
-      AP_C_RED=${AP_C_RED:-124}         # dark red
-      AP_C_ORANGE=${AP_C_ORANGE:-130}   # burnt orange
-      AP_C_PURPLE=${AP_C_PURPLE:-55}    # indigo
-      AP_C_CYAN=${AP_C_CYAN:-31}        # teal
-      AP_C_GRAY=${AP_C_GRAY:-240}       # dim gray
+      AP_C_BG0=255        # white
+      AP_C_BG1=252        # light gray
+      AP_C_BG2=248        # silver
+      AP_C_BG3=244        # gray
+      AP_C_WHITE=235    # dark text
+      AP_C_BLUE=25       # navy
+      AP_C_GREEN=28      # dark green
+      AP_C_YELLOW=136   # muddy gold
+      AP_C_RED=124         # dark red
+      AP_C_ORANGE=130   # burnt orange
+      AP_C_PURPLE=55    # indigo
+      AP_C_CYAN=31        # teal
+      AP_C_GRAY=240       # dim gray
       ;;
     amber)
-      AP_C_BG0=${AP_C_BG0:-234}        # dark brown/gray
-      AP_C_BG1=${AP_C_BG1:-235}        # slightly lighter
-      AP_C_BG2=${AP_C_BG2:-237}        # brownish gray
-      AP_C_BG3=${AP_C_BG3:-239}        # mid gray
-      AP_C_WHITE=${AP_C_WHITE:-223}    # soft cream
-      AP_C_BLUE=${AP_C_BLUE:-109}      # dusty blue
-      AP_C_GREEN=${AP_C_GREEN:-108}     # sage green
-      AP_C_YELLOW=${AP_C_YELLOW:-214}   # amber/orange
-      AP_C_RED=${AP_C_RED:-167}         # terra cotta
-      AP_C_ORANGE=${AP_C_ORANGE:-173}   # clay
-      AP_C_PURPLE=${AP_C_PURPLE:-139}   # dusty purple
-      AP_C_CYAN=${AP_C_CYAN:-108}       # muted cyan
-      AP_C_GRAY=${AP_C_GRAY:-243}       # warm gray
+      AP_C_BG0=234        # dark brown/gray
+      AP_C_BG1=235        # slightly lighter
+      AP_C_BG2=237        # brownish gray
+      AP_C_BG3=239        # mid gray
+      AP_C_WHITE=223    # soft cream
+      AP_C_BLUE=109      # dusty blue
+      AP_C_GREEN=108     # sage green
+      AP_C_YELLOW=214   # amber/orange
+      AP_C_RED=167         # terra cotta
+      AP_C_ORANGE=173   # clay
+      AP_C_PURPLE=139   # dusty purple
+      AP_C_CYAN=108       # muted cyan
+      AP_C_GRAY=243       # warm gray
+      ;;
+    crimson_void)
+      AP_C_BG0=232        # deep black
+      AP_C_BG1=233        # black
+      AP_C_BG2=234        # dark red-tinted gray
+      AP_C_BG3=235        # dark gray
+      AP_C_WHITE=254     # white
+      AP_C_BLUE=202       # sunset orange
+      AP_C_GREEN=28       # deep forest green
+      AP_C_YELLOW=214     # gold
+      AP_C_RED=196        # blood red
+      AP_C_ORANGE=208     # bright orange
+      AP_C_PURPLE=125     # deep magenta
+      AP_C_CYAN=161       # crimson cyan (muted pinkish red)
+      AP_C_GRAY=239       # dim red-gray
+      ;;
+    forest_matrix)
+      AP_C_BG0=16         # true black
+      AP_C_BG1=232        # off-black
+      AP_C_BG2=234        # dark gray
+      AP_C_BG3=235        # mid gray
+      AP_C_WHITE=121      # pale green text
+      AP_C_BLUE=34        # forest green
+      AP_C_GREEN=46       # matrix bright green
+      AP_C_YELLOW=190     # lime
+      AP_C_RED=124        # dark red (subtle)
+      AP_C_ORANGE=28      # green-orange
+      AP_C_PURPLE=22      # deep green
+      AP_C_CYAN=48        # spring green
+      AP_C_GRAY=240       # gray
       ;;
     *) # deep_blue (default)
-      AP_C_BG0=${AP_C_BG0:-232}        # near-black
-      AP_C_BG1=${AP_C_BG1:-235}        # dark gray
-      AP_C_BG2=${AP_C_BG2:-238}        # mid gray
-      AP_C_BG3=${AP_C_BG3:-241}        # light gray
-      AP_C_WHITE=${AP_C_WHITE:-255}     # bright white
-      AP_C_BLUE=${AP_C_BLUE:-39}        # electric blue
-      AP_C_GREEN=${AP_C_GREEN:-82}      # bright green
-      AP_C_YELLOW=${AP_C_YELLOW:-220}   # gold
-      AP_C_RED=${AP_C_RED:-196}         # bright red
-      AP_C_ORANGE=${AP_C_ORANGE:-208}   # orange
-      AP_C_PURPLE=${AP_C_PURPLE:-135}   # purple
-      AP_C_CYAN=${AP_C_CYAN:-51}        # cyan
-      AP_C_GRAY=${AP_C_GRAY:-242}       # mid gray text
+      AP_C_BG0=232        # near-black
+      AP_C_BG1=235        # dark gray
+      AP_C_BG2=238        # mid gray
+      AP_C_BG3=241        # light gray
+      AP_C_WHITE=255     # bright white
+      AP_C_BLUE=39        # electric blue
+      AP_C_GREEN=82      # bright green
+      AP_C_YELLOW=220   # gold
+      AP_C_RED=196         # bright red
+      AP_C_ORANGE=208   # orange
+      AP_C_PURPLE=135   # purple
+      AP_C_CYAN=51        # cyan
+      AP_C_GRAY=242       # mid gray text
       ;;
   esac
 }
