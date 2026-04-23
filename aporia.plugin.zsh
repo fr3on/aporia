@@ -426,6 +426,10 @@ _aporia_inspect_dump() {
   for key val in "${(@kv)_AP_ASYNC_DATA}"; do
     ((count++))
     if [[ $key == "lang" ]]; then
+      if [[ $val == "NONE" || -z $val ]]; then
+        print -P "  %F{$c_dim}├─%f %F{$c_lab}${(r:10:)key}:%f %F{$c_dim}None%f"
+        continue
+      fi
       print -P "  %F{$c_dim}├─%f %F{$c_lab}${(r:10:)key}:%f"
       local p
       for p in ${(s:%f :)val}; do
@@ -447,18 +451,30 @@ _aporia_inspect_dump() {
   local dkr=$(_ap_docker_info 2>/dev/null || echo "None")
   local venv=$(_ap_venv_info 2>/dev/null || echo "None")
   local kube=$(command kubectl config current-context 2>/dev/null || echo "None")
-  local local_ip=$(ifconfig 2>/dev/null | grep "inet " | grep -v 127.0.0.1 | awk '{print $2}' | head -n 1 || echo "unknown")
+  
+  # Robust IP detection for macOS and Linux
+  local local_ip="unknown"
+  if (( $+commands[ip] )); then
+    local_ip=$(ip addr show | grep "inet " | grep -v 127.0.0.1 | awk '{print $2}' | cut -d/ -f1 | head -n 1)
+  elif (( $+commands[ifconfig] )); then
+    local_ip=$(ifconfig | grep "inet " | grep -v 127.0.0.1 | awk '{print $2}' | head -n 1)
+  fi
   
   print -P "  %F{$c_dim}│%f %F{$c_lab}Container:%f  %F{$c_val}${dkr:-default}%f"
   print -P "  %F{$c_dim}│%f %F{$c_lab}VirtualEnv:%f %F{$c_val}${venv:-None}%f"
   print -P "  %F{$c_dim}│%f %F{$c_lab}Kubernetes:%f %F{$c_val}$kube%f"
-  print -P "  %F{$c_dim}│%f %F{$c_lab}Local IP:%f   %F{$c_val}$local_ip%f"
+  print -P "  %F{$c_dim}│%f %F{$c_lab}Local IP:%f   %F{$c_val}${local_ip:-unknown}%f"
 
   # [5] Performance & State
   print -P "\n %F{$c_sub}󰄨 System Telemetry%f"
   print -P "  %F{$c_dim}│%f %F{$c_lab}Exit Code:%f   %F{${_ap_last_exit:-0}}${_ap_last_exit:-0}%f"
   print -P "  %F{$c_dim}│%f %F{$c_lab}Last Exec:%f   %F{$c_val}${_ap_last_exec_time:-< ${AP_EXEC_TIME_THRESHOLD:-2}s}%f"
-  print -P "  %F{$c_dim}│%f %F{$c_lab}Hardware:%f    %F{$c_dim}$(uname -m) / $(uname -s)%f"
+  
+  local os_info="$(uname -s) $(uname -m)"
+  if [[ -f /etc/os-release ]]; then
+    os_info=$(grep "^PRETTY_NAME=" /etc/os-release | cut -d= -f2 | tr -d '"')
+  fi
+  print -P "  %F{$c_dim}│%f %F{$c_lab}OS/Distro:%f   %F{$c_dim}$os_info%f"
   print -P "  %F{$c_dim}│%f %F{$c_lab}Session PID:%f %F{$c_dim}$$%f"
   
   print -P "\n %F{$c_dim}Aporia Forensic Analysis Complete.%f\n"
