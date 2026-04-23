@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.1.1] - The Forensic Intelligence Expansion
+This update transforms Aporia into a specialized forensic and digital intelligence environment, introducing real-time monitoring and operational scope tracking.
+
+### Highlights
+*   **Forensic Plugin Suite**: New modules for **VPN detection** (Tailscale, Mullvad, WireGuard), **Operational Target tracking** (`aporia-target`), and **Live Telemetry** (CPU/RAM).
+*   **Theme Engine Overhaul**: Added **`crimson_void`** (Hacker aesthetic) and **`forest_matrix`** (Digital green) themes. Fixed color persistence bugs when switching themes.
+*   **Cloud & Infrastructure Identity**: Integrated context tracking for **Azure Subscription**, **GCP Project**, and **GitHub CLI** identity.
+*   **Enhanced Dashboard**: The `aporia info` dashboard now displays live telemetry data and more accurate plugin status reporting.
+*   **Repository Governance**: Added official GitHub Issue/PR templates and a Security Policy for better community engagement.
+
+### Improvements & Fixes
+*   **Persistence Fix**: Theme changes are now correctly saved to `~/.zshrc` using portable logic.
+*   **Math Safety**: Hardened telemetry logic with defensive math expressions to prevent shell startup errors.
+*   **Variable Renaming**: Resolved conflicts with Zsh read-only variables (like `status`) in vpn segments.
+
+---
+
 ## [1.1.0] - The Async Velocity Update
 This update introduces a high-performance asynchronous engine and several modern UI refinements for a faster, more flexible terminal experience.
 
