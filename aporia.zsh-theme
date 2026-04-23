@@ -239,6 +239,9 @@ if [[ $AP_ASCII_FALLBACK -eq 1 ]] || ! _ap_is_utf8; then
   _AP_ICO_RUST="rs"
   _AP_ICO_GO="go"
   _AP_ICO_DIRTY="*"
+  _AP_ICO_STAGED="+"
+  _AP_ICO_MODIFIED="!"
+  _AP_ICO_UNTRACKED="?"
   _AP_ICO_AHEAD="^"
   _AP_ICO_BEHIND="v"
   _AP_ICO_STASH="$"
@@ -264,6 +267,9 @@ elif [[ $AP_USE_NERD_FONT -eq 0 ]]; then
   _AP_ICO_JAVA="java"
   _AP_ICO_CPP="c++"
   _AP_ICO_DIRTY="*"
+  _AP_ICO_STAGED="+"
+  _AP_ICO_MODIFIED="!"
+  _AP_ICO_UNTRACKED="?"
   _AP_ICO_AHEAD="↑"
   _AP_ICO_BEHIND="↓"
   _AP_ICO_STASH="⚑"
@@ -289,6 +295,9 @@ else
   _AP_ICO_JAVA=""
   _AP_ICO_CPP=""
   _AP_ICO_DIRTY="󰝥"
+  _AP_ICO_STAGED="+"
+  _AP_ICO_MODIFIED="!"
+  _AP_ICO_UNTRACKED="?"
   _AP_ICO_AHEAD="↑"
   _AP_ICO_BEHIND="↓"
   _AP_ICO_STASH="󰟫"
@@ -412,17 +421,21 @@ _ap_git_info() {
   command git rev-parse --is-inside-work-tree &>/dev/null || { echo "NONE"; return 1; }
 
   local branch dirty ahead=0 behind=0
+  local staged=0 modified=0 untracked=0
 
   # Branch name or short SHA (detached HEAD)
   branch=$(command git symbolic-ref --short HEAD 2>/dev/null)
   [[ -z $branch ]] && branch=$(command git rev-parse --short HEAD 2>/dev/null)
   [[ -z $branch ]] && { echo "NONE"; return 1; }
 
-  # Dirty check (unstaged + staged + untracked)
-  if ! command git diff --quiet 2>/dev/null || \
-     ! command git diff --cached --quiet 2>/dev/null || \
-     [[ -n $(command git ls-files --others --exclude-standard 2>/dev/null | head -1) ]]; then
+  # Parse porcelain status for counts
+  local git_status
+  git_status=$(command git status --porcelain 2>/dev/null)
+  if [[ -n $git_status ]]; then
     dirty=1
+    staged=$(echo "$git_status" | grep -c "^[MADRC]")
+    modified=$(echo "$git_status" | grep -c "^.[MD]")
+    untracked=$(echo "$git_status" | grep -c "??")
   fi
 
   # Ahead / behind upstream
@@ -437,12 +450,27 @@ _ap_git_info() {
   local stash=0
   stash=$(command git stash list 2>/dev/null | wc -l | tr -d ' ')
 
-  # Build label
-  local label="${_AP_ICO_GIT} $branch"
-  [[ -n $dirty   ]] && label+=" ${_AP_ICO_DIRTY}"
-  (( ahead  > 0 )) && label+=" ${_AP_ICO_AHEAD}$ahead"
-  (( behind > 0 )) && label+=" ${_AP_ICO_BEHIND}$behind"
-  (( stash  > 0 )) && label+=" ${_AP_ICO_STASH}$stash"
+  # Build label parts
+  local -a git_parts=()
+  git_parts+=("${_AP_ICO_GIT} $branch")
+  
+  if [[ -n $dirty ]]; then
+    (( staged    > 0 )) && git_parts+=("${_AP_ICO_STAGED}$staged")
+    (( modified  > 0 )) && git_parts+=("${_AP_ICO_MODIFIED}$modified")
+    (( untracked > 0 )) && git_parts+=("${_AP_ICO_UNTRACKED}$untracked")
+    
+    # Fallback: if somehow dirty but no specific counts, show the indicator
+    if [[ ${#git_parts} -eq 1 ]]; then
+       git_parts+=("${_AP_ICO_DIRTY}")
+    fi
+  fi
+  
+  (( ahead  > 0 )) && git_parts+=("${_AP_ICO_AHEAD}$ahead")
+  (( behind > 0 )) && git_parts+=("${_AP_ICO_BEHIND}$behind")
+  (( stash  > 0 )) && git_parts+=("${_AP_ICO_STASH}$stash")
+
+  # Join with single spaces
+  local label="${(j: :)git_parts}"
 
   # Colour: green=clean, yellow=dirty, red=conflict zone
   local color=$AP_C_GREEN
@@ -450,7 +478,7 @@ _ap_git_info() {
   (( behind > 0 )) && color=$AP_C_RED
   (( stash  > 0 && stash < 5 )) && [[ $color == $AP_C_GREEN ]] && color=$AP_C_YELLOW
 
-  echo "$color $label"    # "COLOR label"
+  echo "$color $label"
 }
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -618,6 +646,15 @@ _ap_build_prompt() {
   # Must be the first line so $? refers to the previous command.
   typeset -g _ap_last_exit=$?
   _ap_calc_exec_time
+  
+  # Request async updates (idempotent)
+  if (( AP_SHOW_GIT )); then
+    _ap_async_request "git" "_ap_git_info"
+  fi
+  if (( AP_SHOW_LANGS )); then
+    _ap_async_request "lang" "_ap_lang_info"
+  fi
+
   _ap_render_prompt
 }
 
@@ -653,17 +690,14 @@ _ap_render_prompt() {
 
   # [6] Git segment
   if (( AP_SHOW_GIT )); then
-    # Invalidate cached data when PWD changes so stale branches from the
-    # previous repo don't briefly render in the new one.
+    # Clear cache if directory changed
     if [[ ${_AP_ASYNC_PWDS[git]:-} != $PWD ]]; then
       unset "_AP_ASYNC_DATA[git]"
       _AP_ASYNC_PWDS[git]=$PWD
-      _ap_async_request "git" "_ap_git_info"
     fi
 
     local git_raw=${_AP_ASYNC_DATA[git]:-}
     if [[ -z $git_raw ]]; then
-      _ap_async_request "git" "_ap_git_info"   # no-op if already pending
       git_raw="$AP_C_GRAY ${_AP_ICO_GIT} ..."
     fi
 
@@ -703,12 +737,9 @@ _ap_render_prompt() {
     if [[ ${_AP_ASYNC_PWDS[lang]:-} != $PWD ]]; then
       unset "_AP_ASYNC_DATA[lang]"
       _AP_ASYNC_PWDS[lang]=$PWD
-      _ap_async_request "lang" "_ap_lang_info"
     fi
+
     local lang_raw=${_AP_ASYNC_DATA[lang]:-}
-    if [[ -z $lang_raw ]]; then
-      _ap_async_request "lang" "_ap_lang_info"   # no-op if already pending
-    fi
     
     if [[ -n $lang_raw && $lang_raw != "NONE" ]]; then
       # Collapse multiple languages if needed (Show first + count)
