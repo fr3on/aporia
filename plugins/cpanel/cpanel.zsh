@@ -34,9 +34,8 @@ _ap_cpanel_segment() {
 }
 
 _ap_cpanel_precmd() {
-  # Avoid clutter: only show if we are actually in a cPanel-managed path 
-  # or if the user is a standard cPanel user (UID >= 1000 and has .cpanel)
-  [[ -d $HOME/.cpanel ]] || return
+  # Show if we are on a cPanel server (system-wide) or have user-level config
+  [[ -d $HOME/.cpanel || -d /usr/local/cpanel ]] || return
   
   local seg=$(_ap_cpanel_segment)
   if [[ -n $seg ]]; then

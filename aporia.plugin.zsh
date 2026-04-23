@@ -36,6 +36,7 @@ typeset -gA _AP_PLUGIN_REGISTRY=(
   zsh-autosuggestions       "https://github.com/zsh-users/zsh-autosuggestions"
   zsh-syntax-highlighting   "https://github.com/zsh-users/zsh-syntax-highlighting"
   proxmox                   ""   # first-party
+  cpanel                    ""   # first-party
 )
 
 # ── Dependencies: plugin_name → required binary ─────────────
