@@ -3,6 +3,9 @@
 AP_C_DOCKER=${AP_C_DOCKER:-75}   # docker blue #5fafff
 
 _ap_docker_ctx_segment() {
+  # If theme already showed it on the left, skip right-side segment
+  [[ -n ${_AP_DOCKER_CONTEXT:-} ]] && return
+
   # Only show when inside a Docker project
   _ap_find_up "docker-compose.yml" "docker-compose.yaml" "Dockerfile" || return
 

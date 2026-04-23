@@ -40,7 +40,7 @@ fi
 typeset -g _APORIA_LOADED=1
 
 # Aporia Version
-export APORIA_VERSION="1.2.1"
+export APORIA_VERSION="1.1.1"
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  INTERNAL UTILS
@@ -550,19 +550,31 @@ _ap_venv_info() {
 }
 
 _ap_docker_info() {
-  # Requires docker binary
-  (( $+commands[docker] )) || return 1
+  # Requires docker binary or config
+  [[ -f $HOME/.docker/config.json ]] || (( $+commands[docker] )) || return 1
 
   # Cache docker context for the session (refreshed only when needed)
   if [[ -z $_ap_docker_cache || $_ap_docker_cache_pwd != $PWD ]]; then
-    local ctx
-    ctx=$(command docker context show 2>/dev/null)
+    local ctx="default"
+    local cfg="$HOME/.docker/config.json"
+    
+    if [[ -f $cfg ]]; then
+      # Fast path: read from config
+      ctx=$(command awk -F'"' '/"currentContext"/{print $4; exit}' "$cfg" 2>/dev/null)
+      [[ -z $ctx ]] && ctx="default"
+    elif (( $+commands[docker] )); then
+      # Fallback: subprocess
+      ctx=$(command docker context show 2>/dev/null)
+    fi
+
     if [[ -n $ctx && $ctx != "default" ]]; then
       _ap_docker_cache="$ctx"
     else
       _ap_docker_cache=""
     fi
     _ap_docker_cache_pwd=$PWD
+    # Share with plugins to avoid duplication
+    export _AP_DOCKER_CONTEXT=$_ap_docker_cache
   fi
 
   [[ -n $_ap_docker_cache ]] && echo "$_ap_docker_cache"
@@ -614,36 +626,34 @@ _ap_render_prompt() {
   local last_exit=$_ap_last_exit
   local LEFT="" RIGHT=""
 
-  # ── LEFT SIDE ───────────────────────────────────────────────────
-
-  # [1] SSH and User context
-  if (( AP_SHOW_SSH )) && [[ -n $SSH_CONNECTION || -n $SSH_CLIENT ]]; then
-    # Show SSH icon and user@host in orange/white
-    LEFT+="%F{$AP_C_ORANGE}${_AP_ICO_SSH} %F{$AP_C_WHITE}%n@%m %f"
-  fi
-
-  # Always show OS branding icon for normal users
+  # [1] OS Branding (Always first for normal users)
   # For root (UID 0), this is redundant as the prompt character itself becomes the OS icon
   if [[ $UID -ne 0 && $EUID -ne 0 ]]; then
     LEFT+="%F{$AP_C_GRAY}${_AP_ICO_OS} %f"
   fi
 
-  # [2] Directory
+  # [2] SSH and User context
+  if (( AP_SHOW_SSH )) && [[ -n $SSH_CONNECTION || -n $SSH_CLIENT ]]; then
+    # Show SSH icon and user@host in orange/white
+    LEFT+="%F{$AP_C_ORANGE}${_AP_ICO_SSH} %F{$AP_C_WHITE}%n@%m %f"
+  fi
+
+  # [3] Directory
   LEFT+="%F{$AP_C_BLUE}${_AP_ICO_DIR} %${AP_DIR_DEPTH}~ "
 
-  # [3] Venv / Conda
+  # [4] Venv / Conda
   local venv=$(_ap_venv_info)
   if [[ -n $venv ]]; then
     LEFT+="%F{$AP_C_GRAY}${_AP_SEP_L} %F{$AP_C_CYAN}${_AP_ICO_PY} $venv "
   fi
 
-  # [4] Docker Context
+  # [5] Docker Context
   local dkr=$(_ap_docker_info)
   if [[ -n $dkr ]]; then
     LEFT+="%F{$AP_C_GRAY}${_AP_SEP_L} %F{$AP_C_BLUE}${_AP_ICO_DOCKER} $dkr "
   fi
 
-  # [5] Git segment
+  # [6] Git segment
   if (( AP_SHOW_GIT )); then
     # Invalidate cached data when PWD changes so stale branches from the
     # previous repo don't briefly render in the new one.
@@ -666,7 +676,7 @@ _ap_render_prompt() {
     fi
   fi
 
-  # [6] Prompt character — ❯ colored by exit status
+  # [7] Prompt character — ❯ colored by exit status
   local prompt_icon="${_AP_ICO_PROMPT}"
   [[ $UID -eq 0 || $EUID -eq 0 ]] && prompt_icon="${_AP_ICO_OS}"
 
@@ -701,7 +711,19 @@ _ap_render_prompt() {
     if [[ -z $lang_raw ]]; then
       _ap_async_request "lang" "_ap_lang_info"   # no-op if already pending
     fi
-    [[ -n $lang_raw && $lang_raw != "NONE" ]] && RIGHT+="$lang_raw  "
+    
+    if [[ -n $lang_raw && $lang_raw != "NONE" ]]; then
+      # Collapse multiple languages if needed (Show first + count)
+      local -a langs=("${(s:%f :)lang_raw}")
+      # Remove empty items
+      langs=("${(@)langs:#}")
+      
+      if [[ ${#langs} -gt 1 ]]; then
+        RIGHT+="${langs[1]}%f %F{$AP_C_GRAY}+$((${#langs}-1))%f  "
+      else
+        RIGHT+="$lang_raw  "
+      fi
+    fi
   fi
 
   # [4] Clock (hide if < 80 chars)

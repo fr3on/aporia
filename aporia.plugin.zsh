@@ -2,7 +2,7 @@
 # ║  aporia.plugin.zsh — Plugin Registry & Loader             ║
 # ║  Sourced by the theme after aporia.zsh-theme is loaded    ║
 # ╚═══════════════════════════════════════════════════════════╝
-export APORIA_VERSION="1.2.1"
+export APORIA_VERSION="1.1.1"
 
 # ── Plugin directory ────────────────────────────────────────
 AP_PLUGIN_DIR="${AP_PLUGIN_DIR:-$HOME/.aporia/plugins}"
@@ -334,6 +334,7 @@ _aporia_help() {
   print -P "   %F{$AP_C_YELLOW}activate <p>%f  Enable a plugin and add to .zshrc"
   print -P "   %F{$AP_C_YELLOW}activate-all%f  Activate all installed plugins"
   print -P "   %F{$AP_C_YELLOW}update%f        Update all installed plugins"
+  print -P "   %F{$AP_C_YELLOW}inspect%f          Show raw segment data for debugging"
   print -P "   %F{$AP_C_YELLOW}help%f          Show this help message\n"
 }
 
@@ -379,6 +380,90 @@ _aporia_dashboard() {
   print -P "\n %F{$AP_C_GRAY}Type 'aporia help' for a list of commands.%f\n"
 }
 
+_aporia_inspect_dump() {
+  # Enable extended globbing for robust regex cleaning
+  setopt local_options extended_glob
+  
+  local c_head=$AP_C_BLUE
+  local c_sub=$AP_C_CYAN
+  local c_lab=$AP_C_WHITE
+  local c_val=$AP_C_CYAN
+  local c_dim=$AP_C_GRAY
+
+  # Header
+  print -P "\n %F{$AP_C_ORANGE}󰂚%f %B%F{$c_head}APORIA INTELLIGENCE%f%b %F{$c_dim}— Forensic Context Analysis%f"
+  print -P " %F{$c_dim}──────────────────────────────────────────────────────────────────%f"
+
+  # [1] Project & Directory
+  print -P " %F{$c_sub}󰉋 Project Status%f"
+  print -P "  %F{$c_dim}│%f %F{$c_lab}Root:%f        %F{$c_val}$(git rev-parse --show-toplevel 2>/dev/null || echo $PWD)%f"
+  print -P "  %F{$c_dim}│%f %F{$c_lab}Working Dir:%f %F{$c_val}$PWD%f"
+  
+  local version="unknown"
+  if [[ -f Cargo.toml ]]; then
+    version=$(grep -m1 "^version" Cargo.toml | cut -d'"' -f2 2>/dev/null)
+  elif [[ -f package.json ]]; then
+    version=$(grep -m1 "\"version\"" package.json | cut -d'"' -f4 2>/dev/null)
+  fi
+  [[ $version != "unknown" ]] && print -P "  %F{$c_dim}│%f %F{$c_lab}Version:%f     %F{$AP_C_YELLOW}v$version%f"
+  
+  # [2] Git Details (if in repo)
+  if command git rev-parse --is-inside-work-tree &>/dev/null; then
+    print -P "  %F{$c_dim}│%f"
+    print -P "  %F{$c_dim}├─%f %F{$c_sub}󰊢 Git Engine%f"
+    local branch=$(git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD 2>/dev/null)
+    local remote=$(git config --get branch.$branch.remote 2>/dev/null || echo "none")
+    local upstream=$(git config --get branch.$branch.merge 2>/dev/null || echo "none")
+    print -P "  %F{$c_dim}│%f  %F{$c_lab}Branch:%f   %F{$c_val}$branch%f"
+    print -P "  %F{$c_dim}│%f  %F{$c_lab}Remote:%f   %F{$c_val}$remote%f"
+    print -P "  %F{$c_dim}│%f  %F{$c_lab}Upstream:%f %F{$c_val}${upstream#refs/heads/}%f"
+    print -P "  %F{$c_dim}│%f  %F{$c_lab}Stashed:%f  %F{$c_val}$(git stash list 2>/dev/null | wc -l | tr -d ' ') layers%f"
+  fi
+
+  # [3] Async Data (Cleaned)
+  print -P "\n %F{$c_sub}󰑭 Async Cache Intelligence%f"
+  local key val count=0
+  for key val in "${(@kv)_AP_ASYNC_DATA}"; do
+    ((count++))
+    if [[ $key == "lang" ]]; then
+      print -P "  %F{$c_dim}├─%f %F{$c_lab}${(r:10:)key}:%f"
+      local p
+      for p in ${(s:%f :)val}; do
+        [[ -z ${p// /} ]] && continue
+        local clean_p=$(echo "$p" | sed -E 's/%[FfKkBbUu](\{[^}]*\})?//g')
+        print -P "  %F{$c_dim}│%f   %F{$c_dim}•%f %F{$c_val}${clean_p#" "}%f"
+      done
+    else
+      local clean_val=$(echo "$val" | sed -E 's/%[FfKkBbUu](\{[^}]*\})?//g')
+      [[ $key != "lang" ]] && clean_val=${clean_val##[0-9]# }
+      print -P "  %F{$c_dim}├─%f %F{$c_lab}${(r:10:)key}:%f %F{$c_val}${clean_val#" "}%f"
+    fi
+  done
+  [[ $count -eq 0 ]] && print -P "  %F{$c_dim}└─%f %F{$c_dim}No cached intelligence available.%f"
+
+  # [4] Environment Context
+  print -P "\n %F{$c_sub}󰟀 Infrastructure Context%f"
+  
+  local dkr=$(_ap_docker_info 2>/dev/null || echo "None")
+  local venv=$(_ap_venv_info 2>/dev/null || echo "None")
+  local kube=$(command kubectl config current-context 2>/dev/null || echo "None")
+  local local_ip=$(ifconfig 2>/dev/null | grep "inet " | grep -v 127.0.0.1 | awk '{print $2}' | head -n 1 || echo "unknown")
+  
+  print -P "  %F{$c_dim}│%f %F{$c_lab}Container:%f  %F{$c_val}${dkr:-default}%f"
+  print -P "  %F{$c_dim}│%f %F{$c_lab}VirtualEnv:%f %F{$c_val}${venv:-None}%f"
+  print -P "  %F{$c_dim}│%f %F{$c_lab}Kubernetes:%f %F{$c_val}$kube%f"
+  print -P "  %F{$c_dim}│%f %F{$c_lab}Local IP:%f   %F{$c_val}$local_ip%f"
+
+  # [5] Performance & State
+  print -P "\n %F{$c_sub}󰄨 System Telemetry%f"
+  print -P "  %F{$c_dim}│%f %F{$c_lab}Exit Code:%f   %F{${_ap_last_exit:-0}}${_ap_last_exit:-0}%f"
+  print -P "  %F{$c_dim}│%f %F{$c_lab}Last Exec:%f   %F{$c_val}${_ap_last_exec_time:-< ${AP_EXEC_TIME_THRESHOLD:-2}s}%f"
+  print -P "  %F{$c_dim}│%f %F{$c_lab}Hardware:%f    %F{$c_dim}$(uname -m) / $(uname -s)%f"
+  print -P "  %F{$c_dim}│%f %F{$c_lab}Session PID:%f %F{$c_dim}$$%f"
+  
+  print -P "\n %F{$c_dim}Aporia Forensic Analysis Complete.%f\n"
+}
+
 aporia() {
   local cmd=$1
   case "$cmd" in
@@ -398,6 +483,9 @@ aporia() {
       ;;
     activate-all)
       aporia-activate-all
+      ;;
+    inspect|debug|env|data)
+      _aporia_inspect_dump
       ;;
     info|status|"")
       _aporia_dashboard
