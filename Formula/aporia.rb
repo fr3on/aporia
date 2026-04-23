@@ -15,6 +15,24 @@ class Aporia < Formula
     
     # Also install auxiliary scripts
     share.install "uninstall.sh"
+
+    # Create the "aporia-setup" helper script
+    (bin/"aporia-setup").write <<~EOS
+      #!/bin/zsh
+      # Aporia Auto-Setup Helper
+      ZSHRC="$HOME/.zshrc"
+      THEME_PATH="#{opt_share}/aporia.zsh-theme"
+      SOURCE_LINE="source $THEME_PATH"
+
+      if grep -qF "$THEME_PATH" "$ZSHRC" 2>/dev/null; then
+        echo "Aporia is already configured in $ZSHRC"
+      else
+        echo "Adding Aporia to $ZSHRC..."
+        echo -e "\\n# Aporia Zsh Theme\\n$SOURCE_LINE" >> "$ZSHRC"
+        echo "Successfully activated! Please restart your terminal or run: source ~/.zshrc"
+      fi
+    EOS
+    chmod 0755, bin/"aporia-setup"
     
     # Create a symlink to make it easier to find
     pkgshare.install_symlink share/"aporia.zsh-theme" => "aporia.zsh-theme"
@@ -22,12 +40,11 @@ class Aporia < Formula
 
   def caveats
     <<~EOS
-      To activate the Aporia theme, add the following to your .zshrc:
-        source #{opt_share}/aporia.zsh-theme
+      Aporia has been installed! To activate it automatically, run:
+        aporia-setup
 
-      Alternatively, if you use a plugin manager:
-        Zinit:    zinit ice pick"aporia.zsh-theme"; zinit light fr3on/aporia
-        Antigen:  antigen theme fr3on/aporia
+      Or manually add this to your .zshrc:
+        source #{opt_share}/aporia.zsh-theme
     EOS
   end
 
