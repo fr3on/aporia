@@ -39,6 +39,15 @@ if [[ -n ${_APORIA_LOADED:-} ]]; then
 fi
 typeset -g _APORIA_LOADED=1
 
+# Ensure essential hooks and modules are available
+autoload -Uz add-zsh-hook
+autoload -Uz is-at-least
+zmodload zsh/datetime 2>/dev/null
+zmodload zsh/stat 2>/dev/null
+zmodload zsh/parameter 2>/dev/null
+zmodload zsh/system 2>/dev/null
+zmodload zsh/mathfunc 2>/dev/null
+
 # ── Prompt options ───────────────────────────────────────────────────────────
 # PROMPT_SUBST  — enables $var and %F{} expansion inside PROMPT/RPROMPT.
 #                 Without this, %F{color} sequences are printed as literal text
@@ -48,7 +57,6 @@ typeset -g _APORIA_LOADED=1
 setopt PROMPT_SUBST PROMPT_PERCENT PROMPT_CR
 
 # Essential hooks (precmd must be early to stop timer, preexec must be late to start timer)
-autoload -Uz add-zsh-hook
 add-zsh-hook precmd  _ap_build_prompt
 # Note: preexec registration is moved to the end of the file to capture only the command.
 
@@ -59,14 +67,6 @@ export ZSH_THEME_NAME="aporia"
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  INTERNAL UTILS
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-# Load modules
-zmodload zsh/datetime 2>/dev/null
-zmodload zsh/parameter 2>/dev/null
-zmodload zsh/system 2>/dev/null
-zmodload zsh/mathfunc 2>/dev/null
-
-autoload -Uz is-at-least
 
 if is-at-least 5.8 && [[ -n $EPOCHREALTIME ]]; then
   _ap_now() { echo $EPOCHREALTIME }
@@ -743,7 +743,6 @@ _ap_build_prompt() {
       local mtime=""
       if [[ -f "$git_root/index" ]]; then
         # Use zsh/stat if available for speed
-        zmodload zsh/stat 2>/dev/null
         if (( $+functions[zstat] )); then
           mtime=$(zstat +mtime "$git_root/index")
         elif command -v stat &>/dev/null; then
