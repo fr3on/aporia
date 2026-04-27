@@ -39,11 +39,12 @@ assert "[[ \"$PROMPT\" == *\"@\"* ]]" "Shows user@host in SSH session"
 unset SSH_CONNECTION
 
 # 2. Root User Safety Mode
-export _AP_UID=0
-_ap_build_prompt
-# When root, _AP_ICO_PROMPT becomes _AP_ICO_OS
-assert "[[ \"$PROMPT\" == *\"$_AP_ICO_OS\"* ]]" "Shows OS icon as prompt for root user"
-unset _AP_UID # back to normal
+(
+  typeset -gr UID=0 EUID=0 2>/dev/null || true
+  _ap_build_prompt
+  # When root, _AP_ICO_PROMPT becomes _AP_ICO_OS
+  assert "[[ \"$PROMPT\" == *\"$_AP_ICO_OS\"* ]]" "Shows OS icon as prompt for root user"
+)
 
 # 3. Exit Code Coloring
 false # set $? to 1

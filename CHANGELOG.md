@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.1.4] - The Setup Polish Update
+This release focuses on heavily refining the out-of-the-box user experience with a redesigned installer, fixing prompt rendering bugs, and hardening the plugin management system.
+
+### Highlights
+*   **Minimalist Installer UX**: The installer script has been visually overhauled. We stripped away heavy ASCII borders in favor of a sleek, modern, minimal interface with animated progress spinners.
+*   **Seamless Auto-Reload**: The installer now automatically drops you straight into your new Zsh environment upon completion (`exec zsh -l`), eliminating the need to manually `source ~/.zshrc`.
+*   **Plugin Deactivation**: Added the `aporia deactivate <plugin>` command to instantly cleanly disable plugins and scrub them from your `.zshrc`.
+*   **Bundled Plugin Stability**: The installer now automatically copies all first-party integrations (like `aws-profile`, `docker-ctx`) directly into your `~/.aporia/plugins` directory so they are always available offline.
+
+### Hardening & Fixes
+*   **Cursor Jumping Bug Fixed**: Patched a critical issue where using the Up/Down arrow keys caused the prompt to jump lines. This was fixed by properly enforcing the `PROMPT_SUBST` option to correctly calculate color sequence widths.
+*   **`activate-all` Patched**: Fixed a bug where `aporia activate-all` silently ignored bundled plugins if they weren't explicitly downloaded first.
+*   **Installer Crash Fixed**: Resolved a hidden strict-mode (`set -e`) termination edge-case that could cause the installer to abort right before patching `.zshrc`.
+
+---
 ## [1.1.3] - The Auto-Setup Update
 This patch introduces a smoother installation experience for Homebrew users and minor architecture refinements.
 

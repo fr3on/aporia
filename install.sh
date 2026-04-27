@@ -1,15 +1,45 @@
 #!/usr/bin/env zsh
-# shellcheck disable=all
+# shellcheck disable=SC2296,SC2128,SC2206
 # aporia.zsh-theme — installer
 # https://github.com/fr3on/aporia
 set -eu
 
+[[ -n $ZSH_VERSION ]] || { echo "Error: This script must be run with zsh."; exit 1; }
+
+if [ "${SHELL##*/}" = "fish" ]; then
+  echo "Error: Fish shell is not compatible with this installer."
+  echo "Switch to Zsh first:  chsh -s \$(command -v zsh)"
+  exit 1
+fi
+
+# ─── CONSTANTS ────────────────────────────────────────────────────────────────
+
+APORIA_VERSION="1.1.4"
 THEME_DEST="$HOME/.aporia.zsh-theme"
 THEME_URL="https://raw.githubusercontent.com/fr3on/aporia/main/aporia.zsh-theme"
 PLUGIN_SYS_DEST="$HOME/.aporia.plugin.zsh"
 PLUGIN_SYS_URL="https://raw.githubusercontent.com/fr3on/aporia/main/aporia.plugin.zsh"
 ZSHRC="$HOME/.zshrc"
 PLUGIN_DIR="$HOME/.aporia/plugins"
+
+INSTALLED_PLUGINS=()
+WARNINGS=()
+
+# ─── COLORS ───────────────────────────────────────────────────────────────────
+# Use $'...' so escape chars are stored correctly, not as literal \033
+
+R=$'\033[0m'
+BOLD=$'\033[1m'
+DIM=$'\033[2m'
+
+FG_WHITE=$'\033[38;5;255m'
+FG_GREEN=$'\033[38;5;83m'
+FG_YELLOW=$'\033[38;5;220m'
+FG_RED=$'\033[38;5;203m'
+FG_BLUE=$'\033[38;5;75m'
+FG_CYAN=$'\033[38;5;87m'
+FG_PURPLE=$'\033[38;5;141m'
+FG_GRAY=$'\033[38;5;245m'
 
 # ─── REGISTRY ────────────────────────────────────────────────────────────────
 typeset -gA PLUGIN_REGISTRY=(
@@ -31,15 +61,42 @@ typeset -gA PLUGIN_REGISTRY=(
 
 SELECTED_PLUGINS=()
 
-# ─── OUTPUT ──────────────────────────────────────────────────────────────────
+# ─── OUTPUT ───────────────────────────────────────────────────────────────────
 
-C_GREEN="\033[32m"; C_YELLOW="\033[33m"; C_RED="\033[31m"; C_BLUE="\033[34m"
-C_BOLD="\033[1m";   C_DIM="\033[2m";     C_RESET="\033[0m"
+ok()      { printf "  ${FG_GREEN}✓${R}  %s\n" "$1"; }
+warn()    { printf "  ${FG_YELLOW}!${R}  %s\n" "$1"; WARNINGS+=("$1"); }
+fail()    { printf "\n  ${FG_RED}✗${R}  %s\n\n" "$1"; exit 1; }
+info()    { printf "  ${FG_GRAY}·${R}  ${DIM}%s${R}\n" "$1"; }
+section() { printf "\n  ${BOLD}${FG_BLUE}::${R} ${BOLD}${FG_WHITE}%s${R}\n\n" "$1"; }
 
-ok()   { printf "%b  ✓%b  %s\n" "${C_GREEN}" "${C_RESET}" "$1"; }
-warn() { printf "%b  !%b  %s\n" "${C_YELLOW}" "${C_RESET}" "$1"; }
-fail() { printf "%b  ✘%b  %s\n" "${C_RED}" "${C_RESET}" "$1"; exit 1; }
-hdr()  { printf "\n%b%s%b\n" "${C_BOLD}" "$1" "${C_RESET}"; }
+# Spinner — animates while a command runs in the background
+spinner() {
+  local label="$1"; shift
+  local spin=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
+  local idx=0
+
+  "$@" >/dev/null 2>&1 &
+  local pid=$!
+
+  while kill -0 "$pid" 2>/dev/null; do
+    printf "\r  ${FG_CYAN}${spin[$idx]}${R}  ${DIM}%s${R}" "$label"
+    idx=$(( (idx + 1) % ${#spin[@]} ))
+    sleep 0.08
+  done
+  wait "$pid"
+  local rc=$?
+  printf "\r"
+  return $rc
+}
+
+# ─── HEADER ───────────────────────────────────────────────────────────────────
+
+print_header() {
+  clear 2>/dev/null || true
+  printf "\n"
+  printf "  ${FG_BLUE}${BOLD}aporia${R}  ${FG_GRAY}·  zsh theme  ·  v${APORIA_VERSION}${R}\n"
+  printf "  ${FG_GRAY}github.com/fr3on/aporia${R}\n"
+}
 
 # ─── ARG PARSING ─────────────────────────────────────────────────────────────
 
@@ -48,15 +105,18 @@ parse_args() {
     case "$1" in
       --plugin)
         if [ -n "${2:-}" ]; then
-          # Split by comma if provided
           local ADDR=("${(@s:,:)2}")
-          for i in "${ADDR[@]}"; do
-            SELECTED_PLUGINS+=("$i")
-          done
+          for i in "${ADDR[@]}"; do SELECTED_PLUGINS+=("$i"); done
           shift 2
         else
           fail "--plugin requires an argument"
         fi
+        ;;
+      --help|-h)
+        printf "\n  ${BOLD}Usage${R}  zsh install.sh [options]\n\n"
+        printf "  ${FG_GRAY}--plugin <name,...>${R}  pre-select plugins\n"
+        printf "  ${FG_GRAY}--help${R}               show this message\n\n"
+        exit 0
         ;;
       *) shift ;;
     esac
@@ -66,62 +126,77 @@ parse_args() {
 # ─── CHECKS ──────────────────────────────────────────────────────────────────
 
 check_shell() {
-  hdr "Checking environment"
-  
+  section "Environment"
+
   if ! command -v zsh >/dev/null 2>&1; then
     warn "zsh not found"
-    printf "  To install zsh:\n"
-    printf "    macOS:  brew install zsh\n"
-    printf "    Ubuntu: sudo apt update && sudo apt install zsh\n"
-    printf "    CentOS: sudo yum install zsh\n\n"
-    fail "zsh is required to use this theme."
+    info "macOS:  brew install zsh"
+    info "Ubuntu: sudo apt install zsh"
+    fail "zsh is required."
   fi
-  ok "zsh is installed"
 
-  ZSH_VER=$(zsh --version | awk '{print $2}')
-  MAJOR=$(echo "$ZSH_VER" | cut -d. -f1)
-  MINOR=$(echo "$ZSH_VER" | cut -d. -f2)
-  [ "$MAJOR" -gt 5 ] || { [ "$MAJOR" -eq 5 ] && [ "$MINOR" -ge 3 ]; } \
-    || fail "zsh 5.3+ required (found $ZSH_VER)"
-  [ "$MAJOR" -gt 5 ] || [ "$MINOR" -ge 8 ] \
-    || warn "zsh $ZSH_VER: exec time less precise (no EPOCHSECONDS)"
-  ok "zsh version: $ZSH_VER"
+  local zsh_ver major minor
+  zsh_ver=$(zsh --version | awk '{print $2}')
+  major=$(echo "$zsh_ver" | cut -d. -f1)
+  minor=$(echo "$zsh_ver" | cut -d. -f2)
+
+  [ "$major" -gt 5 ] || { [ "$major" -eq 5 ] && [ "$minor" -ge 3 ]; } \
+    || fail "Zsh 5.3+ required (found $zsh_ver)"
+  [ "$major" -gt 5 ] || [ "$minor" -ge 8 ] \
+    || warn "Zsh $zsh_ver — upgrade for better timing precision"
+
+  ok "Zsh $zsh_ver"
 
   case "${LANG:-}" in
-    *UTF-8*|*utf8*) ok "locale: ${LANG}" ;;
-    *) warn "non-UTF-8 locale — suggest: export LANG=en_US.UTF-8" ;;
+    *UTF-8*|*utf8*) ok "Locale ${LANG}" ;;
+    *) warn "Non-UTF-8 locale — add: export LANG=en_US.UTF-8" ;;
   esac
 
+  if command -v git >/dev/null 2>&1; then
+    ok "Git $(git --version | awk '{print $3}')"
+  else
+    warn "Git not found — some features will be limited"
+  fi
+
   if [ "${SHELL##*/}" != "zsh" ]; then
-    warn "Currently using ${SHELL##*/}. Aporia requires zsh."
+    warn "Default shell is ${SHELL##*/} — will offer to switch"
   fi
 }
 
-# ─── INSTALL THEME & PLUGIN SYSTEM ───────────────────────────────────────────
+# ─── INSTALL CORE ────────────────────────────────────────────────────────────
 
 install_core() {
-  hdr "Installing core files"
-  
-  # 1. Theme
+  section "Installing"
+
   if [ -f "./aporia.zsh-theme" ]; then
     cp "./aporia.zsh-theme" "$THEME_DEST"
-    ok "theme: copied → $THEME_DEST"
+    ok "Theme  ${FG_GRAY}~/.aporia.zsh-theme${R}"
   elif command -v curl >/dev/null 2>&1; then
-    curl -fsSL "$THEME_URL" -o "$THEME_DEST"
-    ok "theme: downloaded → $THEME_DEST"
+    spinner "Downloading theme" curl -fsSL "$THEME_URL" -o "$THEME_DEST" \
+      && ok "Theme downloaded" \
+      || fail "Failed to download theme. Check your connection."
+  else
+    fail "curl not found and no local copy available."
   fi
 
-  # 2. Plugin System
   if [ -f "./aporia.plugin.zsh" ]; then
     cp "./aporia.plugin.zsh" "$PLUGIN_SYS_DEST"
-    ok "plugins: copied → $PLUGIN_SYS_DEST"
+    ok "Plugin system  ${FG_GRAY}~/.aporia.plugin.zsh${R}"
   elif command -v curl >/dev/null 2>&1; then
-    curl -fsSL "$PLUGIN_SYS_URL" -o "$PLUGIN_SYS_DEST"
-    ok "plugins: downloaded → $PLUGIN_SYS_DEST"
+    spinner "Downloading plugin system" curl -fsSL "$PLUGIN_SYS_URL" -o "$PLUGIN_SYS_DEST" \
+      && ok "Plugin system downloaded" \
+      || warn "Plugin system download failed"
+  fi
+
+  # Always copy bundled first-party plugins so they are available offline
+  if [ -d "./plugins" ]; then
+    mkdir -p "$PLUGIN_DIR"
+    cp -r "./plugins/"* "$PLUGIN_DIR/" 2>/dev/null || true
+    ok "Bundled plugins copied to ${FG_GRAY}~/.aporia/plugins/${R}"
   fi
 }
 
-# ─── PLUGIN SETUP ────────────────────────────────────────────────────────────
+# ─── PLUGINS ─────────────────────────────────────────────────────────────────
 
 install_plugin() {
   local name=$1
@@ -129,205 +204,243 @@ install_plugin() {
   local dest="$PLUGIN_DIR/$name"
 
   if [ -d "$dest" ]; then
-    printf "${C_YELLOW}  ⟳${C_RESET}  %-30s already present\n" "$name"
+    info "$name  ${FG_GRAY}already installed${R}"
     return 0
   fi
 
   if [ -n "$url" ]; then
-    printf "${C_BLUE}  ↓${C_RESET}  %-30s installing... " "$name"
-    if git clone --depth=1 "$url" "$dest" >/dev/null 2>&1; then
-      # Create canonical symlink if needed
+    if spinner "Installing $name" git clone --depth=1 "$url" "$dest"; then
       local canonical="$dest/$name.zsh"
       if [ ! -f "$canonical" ]; then
         for alt in "$dest"/*.plugin.zsh "$dest"/*.zsh; do
-          if [ -f "$alt" ]; then
-            ln -sf "$(basename "$alt")" "$canonical"
-            break
-          fi
+          [ -f "$alt" ] && ln -sf "$(basename "$alt")" "$canonical" && break
         done
       fi
-      printf "%binstalled ✓%b\n" "${C_GREEN}" "${C_RESET}"
+      ok "$name"
+      INSTALLED_PLUGINS+=("$name")
     else
-      printf "%bfailed ✗%b\n" "${C_RED}" "${C_RESET}"
-      return 1
+      warn "$name failed to install"
     fi
   else
-    # First-party bundled plugin
     if [ -d "./plugins/$name" ]; then
-      printf "${C_BLUE}  →${C_RESET}  %-30s copying bundled... " "$name"
       cp -r "./plugins/$name" "$PLUGIN_DIR/"
-      printf "%bdone ✓%b\n" "${C_GREEN}" "${C_RESET}"
+      ok "$name  ${FG_GRAY}(bundled)${R}"
+      INSTALLED_PLUGINS+=("$name")
     else
-      printf "${C_RED}  ✗${C_RESET}  %-30s unknown plugin\n" "$name"
-      return 1
+      warn "$name — unknown plugin, skipping"
     fi
   fi
 }
 
 setup_plugins() {
-  hdr "Plugin System"
+  section "Plugins"
   mkdir -p "$PLUGIN_DIR"
 
-  # 1. Essentials & Environment detection
-  # Initialize if not already an array (safe under set -u)
   if (( ! ${+AP_PLUGINS} )) || [[ ${(t)AP_PLUGINS} != *array* ]]; then
     AP_PLUGINS=(${=AP_PLUGINS:-})
   fi
 
   if [ -n "${AP_PLUGINS:-}" ]; then
-     # Add existing env plugins to selection if not already there
-     for p in "${AP_PLUGINS[@]}"; do
-       if [[ ! " ${SELECTED_PLUGINS[*]} " == *" $p "* ]]; then
-         SELECTED_PLUGINS+=("$p")
-       fi
-     done
-     ok "detected existing plugins: ${AP_PLUGINS[*]}"
+    for p in "${AP_PLUGINS[@]}"; do
+      [[ ! " ${SELECTED_PLUGINS[*]} " == *" $p "* ]] && SELECTED_PLUGINS+=("$p")
+    done
+    info "Existing plugins: ${AP_PLUGINS[*]}"
   fi
 
   if [ ${#SELECTED_PLUGINS[@]} -eq 0 ] && [ -t 0 ]; then
-    printf "  Install Aporia Essentials (Autocomplete & Highlighting)? [Y/n] "
+    printf "  ${FG_GRAY}Install essentials?${R}  ${DIM}zsh-autosuggestions + zsh-syntax-highlighting${R}\n"
+    printf "  ${FG_WHITE}[Y/n]${R} "
     read -r opt
     case "$opt" in
-      [nN]*) warn "skipping essentials" ;;
+      [nN]*) info "Skipping essentials" ;;
       *)
-        SELECTED_PLUGINS+=("zsh-autosuggestions")
-        SELECTED_PLUGINS+=("zsh-syntax-highlighting")
+        SELECTED_PLUGINS+=("zsh-autosuggestions" "zsh-syntax-highlighting")
         ;;
     esac
+    printf "\n"
   fi
 
-  # 2. Process selected plugins
+  local total=${#SELECTED_PLUGINS[@]}
+  local idx=0
   for name in "${SELECTED_PLUGINS[@]}"; do
-    if [[ "$name" == "zsh-autosuggestions" ]]; then
-      [ -d "$PLUGIN_DIR/$name" ] || git clone --depth=1 "https://github.com/zsh-users/zsh-autosuggestions" "$PLUGIN_DIR/$name" >/dev/null 2>&1 && ok "$name installed"
-      continue
-    fi
-    if [[ "$name" == "zsh-syntax-highlighting" ]]; then
-      [ -d "$PLUGIN_DIR/$name" ] || git clone --depth=1 "https://github.com/zsh-users/zsh-syntax-highlighting" "$PLUGIN_DIR/$name" >/dev/null 2>&1 && ok "$name installed"
+    (( idx++ )) || true
+
+    if [[ "$name" == "zsh-autosuggestions" || "$name" == "zsh-syntax-highlighting" ]]; then
+      local repo="https://github.com/zsh-users/${name}"
+      if [ ! -d "$PLUGIN_DIR/$name" ]; then
+        spinner "Installing $name" git clone --depth=1 "$repo" "$PLUGIN_DIR/$name" \
+          && ok "$name" && INSTALLED_PLUGINS+=("$name") \
+          || warn "$name failed"
+      else
+        info "$name  ${FG_GRAY}already installed${R}"
+      fi
       continue
     fi
     install_plugin "$name"
   done
+
+  if [ $total -eq 0 ]; then
+    info "No plugins selected"
+  fi
 }
 
 # ─── PATCH .ZSHRC ────────────────────────────────────────────────────────────
 
 patch_zshrc() {
-  hdr "Patching ~/.zshrc"
-  SOURCE_LINE="source $THEME_DEST"
+  section "Config"
+  local SOURCE_LINE="source $THEME_DEST"
 
   [ -f "$ZSHRC" ] || touch "$ZSHRC"
 
-  # Merge plugins into AP_PLUGINS array in .zshrc
+  # Merge plugin list
   if [ ${#SELECTED_PLUGINS[@]} -gt 0 ]; then
     local plugin_str=""
     for p in "${SELECTED_PLUGINS[@]}"; do
-      # Skip legacy essentials as they are loaded via _ap_load_essentials
       [[ "$p" == "zsh-autosuggestions" || "$p" == "zsh-syntax-highlighting" ]] && continue
       plugin_str+="$p "
     done
-
     if [ -n "$plugin_str" ]; then
       if grep -q "AP_PLUGINS=" "$ZSHRC"; then
-        # This is basic and might need a smarter merge, but following instructions
-        sed -i.tmp "s/AP_PLUGINS=(.*/AP_PLUGINS=($plugin_str\${AP_PLUGINS[@]})/" "$ZSHRC" && rm -f "${ZSHRC}.tmp"
-        ok "updated AP_PLUGINS in .zshrc"
+        perl -pi -e "s/AP_PLUGINS=\(([^)]*)\)/AP_PLUGINS=($plugin_str\$1)/" "$ZSHRC"
+        ok "AP_PLUGINS updated"
       else
         printf '\n# Aporia: Active Plugins\nexport AP_PLUGINS=(%s)\n' "$plugin_str" >> "$ZSHRC"
-        ok "added AP_PLUGINS to .zshrc"
+        ok "AP_PLUGINS added"
       fi
     fi
   fi
 
+  # Comment out conflicting ZSH_THEME
   if grep -qE "^ZSH_THEME=" "$ZSHRC" 2>/dev/null; then
     cp "$ZSHRC" "${ZSHRC}.aporia.bak"
-    sed -i.tmp 's/^ZSH_THEME=/# ZSH_THEME=/g' "$ZSHRC" && rm -f "${ZSHRC}.tmp"
-    warn "ZSH_THEME commented out (backup: ~/.zshrc.aporia.bak)"
+    perl -pi -e 's/^ZSH_THEME=/# ZSH_THEME=/g' "$ZSHRC"
+    warn "ZSH_THEME commented out  ${FG_GRAY}(backup: ~/.zshrc.aporia.bak)${R}"
   fi
 
+  # Source line
   if grep -qF "$SOURCE_LINE" "$ZSHRC" 2>/dev/null; then
-    ok "already sourced — no changes"
+    info "Already sourced — no change"
   else
-    # ── History Defaults (if missing) ──
     if ! grep -q "HISTFILE=" "$ZSHRC"; then
-      printf '\n# Aporia: History configuration\nexport HISTFILE="$HOME/.zsh_history"\nexport HISTSIZE=10000\nexport SAVEHIST=10000\n' >> "$ZSHRC"
-      ok "added default history settings to .zshrc"
+      printf '\n# Aporia: History\nexport HISTFILE="$HOME/.zsh_history"\nexport HISTSIZE=10000\nexport SAVEHIST=10000\n' >> "$ZSHRC"
+      ok "History defaults added"
     fi
-    
     printf '\n# aporia.zsh-theme\n%s\n' "$SOURCE_LINE" >> "$ZSHRC"
-    ok "source line added"
+    ok "Source line added to ~/.zshrc"
   fi
 }
 
-# ─── REMAINING STEPS ─────────────────────────────────────────────────────────
+# ─── BASH BRIDGE ─────────────────────────────────────────────────────────────
 
 patch_bashrc() {
-  hdr "Adding Bash fallback bridge"
   local BASHRC="$HOME/.bashrc"
+  local MARK="# aporia-bash-bridge"
   [ -f "$BASHRC" ] || touch "$BASHRC"
-  BRIDGE_MARK="# aporia-bash-bridge"
-  if grep -qF "$BRIDGE_MARK" "$BASHRC" 2>/dev/null; then
-    ok "bridge already exists"
-  else
-    printf '\n%s\nif [[ $- == *i* ]] && command -v zsh >/dev/null 2>&1; then\n  exec zsh\nfi\n' "$BRIDGE_MARK" >> "$BASHRC"
-    ok "auto-switch added to ~/.bashrc"
+  if ! grep -qF "$MARK" "$BASHRC" 2>/dev/null; then
+    printf '\n%s\nif [[ $- == *i* ]] && command -v zsh >/dev/null 2>&1; then\n  exec zsh\nfi\n' "$MARK" >> "$BASHRC"
+    ok "Bash → Zsh bridge added"
   fi
 }
+
+# ─── FONTS ───────────────────────────────────────────────────────────────────
+
+configure_fonts() {
+  section "Fonts"
+  [ -t 0 ] || return 0
+
+  printf "  ${FG_GRAY}Do you use a Nerd Font in your terminal?${R}\n"
+  printf "  ${FG_GRAY}(JetBrainsMono, FiraCode, etc.)${R}\n\n"
+  printf "  ${FG_WHITE}[Y/n]${R} "
+  read -r opt
+  printf "\n"
+  case "$opt" in
+    [nN]*)
+      if grep -q "export AP_USE_NERD_FONT=" "$ZSHRC" 2>/dev/null; then
+        perl -pi -e 's/export AP_USE_NERD_FONT=.*/export AP_USE_NERD_FONT=0/' "$ZSHRC"
+      else
+        printf '\n# Aporia: Compatibility Mode\nexport AP_USE_NERD_FONT=0\n' >> "$ZSHRC"
+      fi
+      ok "Compatibility mode  ${FG_GRAY}(standard Unicode)${R}"
+      ;;
+    *)
+      if grep -q "export AP_USE_NERD_FONT=" "$ZSHRC" 2>/dev/null; then
+        perl -pi -e 's/export AP_USE_NERD_FONT=.*/export AP_USE_NERD_FONT=1/' "$ZSHRC"
+      fi
+      ok "Rich mode  ${FG_GRAY}(Nerd Font icons)${R}"
+      ;;
+  esac
+}
+
+# ─── DEFAULT SHELL ────────────────────────────────────────────────────────────
+
+switch_shell() {
+  [ "$(basename "$SHELL")" = "zsh" ] && return 0
+
+  section "Default Shell"
+  printf "  ${FG_GRAY}Your default shell is ${FG_YELLOW}${SHELL##*/}${FG_GRAY}.${R}\n"
+  printf "  Switch to Zsh? ${FG_WHITE}[Y/n]${R} "
+  read -r opt
+  printf "\n"
+  case "$opt" in
+    [nN]*) info "Keeping ${SHELL##*/}" ;;
+    *)
+      local zsh_path; zsh_path=$(command -v zsh)
+      if chsh -s "$zsh_path" 2>/dev/null || chsh -s "$zsh_path" "$USER" 2>/dev/null; then
+        ok "Default shell set to Zsh"
+      else
+        warn "Auto-switch failed — run:  chsh -s \$(which zsh)"
+      fi
+      ;;
+  esac
+}
+
+# ─── UNINSTALLER ─────────────────────────────────────────────────────────────
 
 install_uninstaller() {
   if [ -f "./uninstall.sh" ]; then
     cp "./uninstall.sh" "$HOME/.aporia-uninstall.sh"
     chmod +x "$HOME/.aporia-uninstall.sh"
-    ok "uninstaller → ~/.aporia-uninstall.sh"
   fi
 }
 
-configure_fonts() {
-  hdr "Font Configuration"
-  [ -t 0 ] || return 0
-  printf "  Do you use a Nerd Font (e.g. JetBrainsMono, FiraCode)? [Y/n] "
+# ─── SUMMARY ─────────────────────────────────────────────────────────────────
+
+print_summary() {
+  printf "\n"
+
+  if [ ${#INSTALLED_PLUGINS[@]} -gt 0 ]; then
+    printf "  ${FG_GRAY}Installed:  ${FG_WHITE}${INSTALLED_PLUGINS[*]}${R}\n\n"
+  fi
+
+  if [ ${#WARNINGS[@]} -gt 0 ]; then
+    printf "  ${FG_YELLOW}Warnings:${R}\n"
+    for w in "${WARNINGS[@]}"; do
+      printf "  ${FG_YELLOW}!${R}  ${DIM}%s${R}\n" "$w"
+    done
+    printf "\n"
+  fi
+
+  printf "  ${FG_GREEN}${BOLD}Done.${R}  Aporia has been successfully installed.\n\n"
+  printf "  ${FG_GRAY}Quick commands:  aporia help · aporia doctor · aporia benchmark${R}\n\n"
+
+  printf "  ${FG_CYAN}Do you want to reload your shell now?${R} ${FG_WHITE}[Y/n]${R} "
   read -r opt
+  printf "\n"
   case "$opt" in
-    [nN]*)
-      if grep -q "export AP_USE_NERD_FONT=" "$ZSHRC" 2>/dev/null; then
-        sed -i.tmp 's/export AP_USE_NERD_FONT=.*/export AP_USE_NERD_FONT=0/' "$ZSHRC" && rm -f "${ZSHRC}.tmp"
-      else
-        printf '\n# Aporia: Compatibility Mode (Standard Unicode)\nexport AP_USE_NERD_FONT=0\n' >> "$ZSHRC"
-      fi
-      ok "Compatibility mode enabled"
+    [nN]*) 
+      printf "  ${FG_GRAY}Okay, please run:  source ~/.zshrc${R}\n\n"
       ;;
     *)
-      if grep -q "export AP_USE_NERD_FONT=" "$ZSHRC" 2>/dev/null; then
-        sed -i.tmp 's/export AP_USE_NERD_FONT=.*/export AP_USE_NERD_FONT=1/' "$ZSHRC" && rm -f "${ZSHRC}.tmp"
-      fi
-      ok "Rich mode enabled (Nerd Font)"
+      printf "  ${FG_GREEN}Reloading shell...${R}\n\n"
+      exec zsh -l
       ;;
   esac
-}
-
-switch_shell() {
-  hdr "Setting default shell"
-  if [ "$(basename "$SHELL")" = "zsh" ]; then
-    ok "already using zsh"
-    return
-  fi
-  printf "  Attempting to set zsh as default... "
-  if command -v chsh >/dev/null 2>&1; then
-    if chsh -s "$(command -v zsh)" "$USER" >/dev/null 2>&1 || chsh -s "$(command -v zsh)" >/dev/null 2>&1; then
-      ok "done"
-    else
-      warn "failed (requires manual intervention)"
-      printf "  Please run: %bchsh -s \$(which zsh)%b\n" "${C_BOLD}" "${C_RESET}"
-    fi
-  else
-    warn "chsh not found"
-  fi
 }
 
 # ─── MAIN ────────────────────────────────────────────────────────────────────
 
 main() {
-  printf "\n%baporia%b %bzsh theme · github.com/fr3on/aporia%b\n" "${C_BOLD}" "${C_RESET}" "${C_DIM}" "${C_RESET}"
+  print_header
   parse_args "$@"
   check_shell
   install_core
@@ -337,7 +450,7 @@ main() {
   configure_fonts
   switch_shell
   install_uninstaller
-  printf "\n%b%bdone.%b %breload: source ~/.zshrc or log in again%b\n\n" "${C_GREEN}" "${C_BOLD}" "${C_RESET}" "${C_DIM}" "${C_RESET}"
+  print_summary
 }
 
 main "$@"

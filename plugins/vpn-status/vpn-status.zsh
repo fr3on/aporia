@@ -57,14 +57,16 @@ _ap_vpn_segment() {
   fi
 }
 
-_ap_vpn_precmd() {
-  local seg=$(_ap_vpn_segment)
-  if [[ -n $seg ]]; then
-    # Insert before other segments in RPROMPT
-    RPROMPT="${seg} ${RPROMPT:-}"
-  fi
-}
-
-# Register the hook
-autoload -Uz add-zsh-hook
-add-zsh-hook precmd _ap_vpn_precmd
+if (( $+functions[aporia_register_async] )); then
+  aporia_register_async "vpn-status" "_ap_vpn_segment"
+else
+  _ap_vpn_precmd() {
+    local seg=$(_ap_vpn_segment)
+    if [[ -n $seg ]]; then
+      # Insert before other segments in RPROMPT
+      RPROMPT="${seg} ${RPROMPT:-}"
+    fi
+  }
+  autoload -Uz add-zsh-hook
+  add-zsh-hook precmd _ap_vpn_precmd
+fi

@@ -25,9 +25,13 @@ _ap_kube_ctx_segment() {
   echo "%F{$AP_C_KUBE}󱃾 ${ctx}:${ns}%f"
 }
 
-_ap_kube_ctx_precmd() {
-  local seg=$(_ap_kube_ctx_segment)
-  [[ -n $seg ]] && RPROMPT="${RPROMPT:-} $seg"
-}
-
-add-zsh-hook precmd _ap_kube_ctx_precmd
+if (( $+functions[aporia_register_async] )); then
+  aporia_register_async "kube-ctx" "_ap_kube_ctx_segment"
+else
+  _ap_kube_ctx_precmd() {
+    local seg=$(_ap_kube_ctx_segment)
+    [[ -n $seg ]] && RPROMPT="${RPROMPT:-} $seg"
+  }
+  autoload -Uz add-zsh-hook
+  add-zsh-hook precmd _ap_kube_ctx_precmd
+fi

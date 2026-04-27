@@ -20,13 +20,11 @@ _ap_telemetry_segment() {
   # [1] CPU Load Detection
   if [[ "$OSTYPE" == "darwin"* ]]; then
     local loadavg=$(sysctl -n vm.loadavg 2>/dev/null)
-    [[ -n $loadavg ]] && cpu_load=$(echo $loadavg | awk '{print $2}' | cut -d. -f1)
     local nproc=$(sysctl -n hw.ncpu 2>/dev/null || echo 1)
-    cpu_load=$(( cpu_load * 100 / nproc ))
+    [[ -n $loadavg ]] && cpu_load=$(echo "$loadavg" | awk -v n="$nproc" '{ printf "%.0f", ($2 * 100) / n }')
   else
-    cpu_load=$(awk '{print $1}' /proc/loadavg 2>/dev/null | cut -d. -f1)
     local nproc=$(nproc 2>/dev/null || echo 1)
-    cpu_load=$(( cpu_load * 100 / nproc ))
+    cpu_load=$(awk -v n="$nproc" '{ printf "%.0f", ($1 * 100) / n }' /proc/loadavg 2>/dev/null)
   fi
   cpu_load=${cpu_load:-0}
 

@@ -19,9 +19,13 @@ _ap_aws_segment() {
   echo "%F{$color} $label%f"
 }
 
-_ap_aws_precmd() {
-  local seg=$(_ap_aws_segment)
-  [[ -n $seg ]] && RPROMPT="${RPROMPT:-} $seg"
-}
-
-add-zsh-hook precmd _ap_aws_precmd
+if (( $+functions[aporia_register_async] )); then
+  aporia_register_async "aws-profile" "_ap_aws_segment"
+else
+  _ap_aws_precmd() {
+    local seg=$(_ap_aws_segment)
+    [[ -n $seg ]] && RPROMPT="${RPROMPT:-} $seg"
+  }
+  autoload -Uz add-zsh-hook
+  add-zsh-hook precmd _ap_aws_precmd
+fi

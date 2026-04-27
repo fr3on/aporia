@@ -28,14 +28,12 @@ class Aporia < Formula
         echo "Aporia is already configured in $ZSHRC"
       else
         echo "Adding Aporia to $ZSHRC..."
-        echo -e "\\n# Aporia Zsh Theme\\n$SOURCE_LINE" >> "$ZSHRC"
+        printf '\\n# Aporia Zsh Theme\\n%s\\n' "$SOURCE_LINE" >> "$ZSHRC"
         echo "Successfully activated! Please restart your terminal or run: source ~/.zshrc"
       fi
     EOS
     chmod 0755, bin/"aporia-setup"
     
-    # Create a symlink to make it easier to find
-    pkgshare.install_symlink share/"aporia.zsh-theme" => "aporia.zsh-theme"
   end
 
   def caveats

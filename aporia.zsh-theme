@@ -39,13 +39,21 @@ if [[ -n ${_APORIA_LOADED:-} ]]; then
 fi
 typeset -g _APORIA_LOADED=1
 
+# ── Prompt options ───────────────────────────────────────────────────────────
+# PROMPT_SUBST  — enables $var and %F{} expansion inside PROMPT/RPROMPT.
+#                 Without this, %F{color} sequences are printed as literal text
+#                 and Zsh miscounts the prompt width → ↑/↓ arrows jump lines.
+# PROMPT_PERCENT — enables %-escape sequences (%n, %~, %F, %f, %B, %b, etc.)
+# PROMPT_CR      — ensures the prompt starts at column 0 (prevents drift).
+setopt PROMPT_SUBST PROMPT_PERCENT PROMPT_CR
+
 # Essential hooks (precmd must be early to stop timer, preexec must be late to start timer)
 autoload -Uz add-zsh-hook
 add-zsh-hook precmd  _ap_build_prompt
 # Note: preexec registration is moved to the end of the file to capture only the command.
 
 # Aporia Version
-export APORIA_VERSION="1.1.3"
+export APORIA_VERSION="1.1.4"
 export ZSH_THEME_NAME="aporia"
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -79,6 +87,12 @@ _ap_is_linux() { [[ $(uname -s) == "Linux"  ]]; }
 _ap_get_os_icon() {
   if _ap_is_macos; then
     echo ""   # Apple
+    return
+  fi
+
+  # Check if running inside WSL even if distro is unknown
+  if [[ -n $WSL_DISTRO_NAME || -f /proc/sys/fs/binfmt_misc/WSLInterop ]]; then
+    echo "󰍲"   # Windows logo for WSL
     return
   fi
 
@@ -169,14 +183,9 @@ _ap_get_os_icon() {
       whonix)        echo "󰒄" ;;
       qubes)         echo "󰒄" ;;
 
-      # ── WSL detection ───────────────────────────────────────
+      # ── Default Linux fallback ──────────────────────────────
       *)
-        # Check if running inside WSL even if distro is unknown
-        if [[ -n $WSL_DISTRO_NAME || -f /proc/sys/fs/binfmt_misc/WSLInterop ]]; then
-          echo "󰍲"   # Windows logo for WSL
-        else
-          echo "󰌽"   # Generic Linux penguin
-        fi
+        echo "󰌽"   # Generic Linux penguin
         ;;
     esac
   else
@@ -210,7 +219,8 @@ _ap_get_os_name() {
 
 # Check if current locale supports UTF-8
 _ap_is_utf8() {
-  case "${LANG:-}${LC_ALL:-}${LC_CTYPE:-}" in
+  local locale="${LC_ALL:-${LC_CTYPE:-${LANG:-}}}"
+  case "$locale" in
     *UTF-8*|*utf8*) return 0 ;;
     *) return 1 ;;
   esac
@@ -532,10 +542,21 @@ _ap_segment_lang() {
   local dir=$PWD
   local -A found
 
+  local nvm_ver=""
   # Walk up the tree once and collect project indicators
   while true; do
     # Node
-    [[ -z ${found[node]} ]] && [[ -f "$dir/package.json" || -f "$dir/.node-version" || -f "$dir/.nvmrc" ]] && found[node]=1
+    if [[ -z ${found[node]} ]]; then
+      if [[ -f "$dir/package.json" ]]; then
+        found[node]=1
+      elif [[ -f "$dir/.nvmrc" ]]; then
+        found[node]=1; nvm_ver=$(head -n 1 "$dir/.nvmrc" 2>/dev/null)
+      elif [[ -f "$dir/.node-version" ]]; then
+        found[node]=1; nvm_ver=$(head -n 1 "$dir/.node-version" 2>/dev/null)
+      fi
+    fi
+    # Deno
+    [[ -z ${found[deno]} ]] && [[ -f "$dir/deno.json" || -f "$dir/deno.jsonc" ]] && found[deno]=1
     # Rust
     [[ -z ${found[rust]} ]] && [[ -f "$dir/Cargo.toml" ]] && found[rust]=1
     # Go
@@ -546,6 +567,8 @@ _ap_segment_lang() {
     [[ -z ${found[php]} ]] && [[ -f "$dir/composer.json" || -f "$dir/index.php" ]] && found[php]=1
     # Java
     [[ -z ${found[java]} ]] && [[ -f "$dir/pom.xml" || -f "$dir/build.gradle" || -f "$dir/.java-version" ]] && found[java]=1
+    # Python
+    [[ -z ${found[python]} ]] && [[ -f "$dir/pyproject.toml" || -f "$dir/setup.py" || -f "$dir/requirements.txt" || -f "$dir/.python-version" ]] && found[python]=1
     # C++
     if [[ -z ${found[cpp]} ]]; then
       # Faster glob check for C++ files
@@ -558,8 +581,17 @@ _ap_segment_lang() {
   done
 
   # Run version commands only for found projects
-  if [[ -n ${found[node]} ]]; then
-    local nv; nv=$(command node --version 2>/dev/null) && parts+=("%F{$AP_C_GREEN}${_AP_ICO_NODE} $nv%f")
+  if [[ -n ${found[deno]} ]]; then
+    local denov; denov=$(command deno --version 2>/dev/null | head -n 1 | awk '{print $2}') && [[ -n $denov ]] && parts+=("%F{$AP_C_WHITE}🦕 $denov%f")
+  elif [[ -n ${found[node]} ]]; then
+    local nv
+    if [[ -n $nvm_ver ]]; then
+      nv="${nvm_ver#v}"
+    else
+      nv=$(command node --version 2>/dev/null)
+      nv="${nv#v}"
+    fi
+    [[ -n $nv ]] && parts+=("%F{$AP_C_GREEN}${_AP_ICO_NODE} $nv%f")
   fi
   if [[ -n ${found[rust]} ]]; then
     local rv; rv=$(command rustc --version 2>/dev/null | awk '{print $2}') && [[ -n $rv ]] && parts+=("%F{$AP_C_ORANGE}${_AP_ICO_RUST} $rv%f")
@@ -575,6 +607,9 @@ _ap_segment_lang() {
   fi
   if [[ -n ${found[java]} ]]; then
     local jv; jv=$(command java -version 2>&1 | head -n 1 | awk -F '"' '{print $2}') && [[ -n $jv ]] && parts+=("%F{$AP_C_WHITE}${_AP_ICO_JAVA} $jv%f")
+  fi
+  if [[ -n ${found[python]} ]]; then
+    local pyv; pyv=$(command python3 --version 2>/dev/null | awk '{print $2}') && [[ -n $pyv ]] && parts+=("%F{$AP_C_YELLOW}${_AP_ICO_PY} $pyv%f")
   fi
   if [[ -n ${found[cpp]} ]]; then
     local cppv; cppv=$(command c++ --version 2>/dev/null | head -n 1 | awk '{print $NF}') && [[ -n $cppv ]] && parts+=("%F{$AP_C_BLUE}${_AP_ICO_CPP} $cppv%f")
@@ -668,7 +703,8 @@ _ap_calc_exec_time() {
   
   local LC_NUMERIC=C
   local now=$(_ap_now)
-  local elapsed=$(( now - _ap_cmd_start ))
+  typeset -F elapsed
+  elapsed=$(( now - _ap_cmd_start ))
   _ap_cmd_start=0
   
   # Check threshold. If AP_EXEC_TIME_THRESHOLD is 0, we show it for everything.
@@ -710,6 +746,8 @@ _ap_build_prompt() {
         zmodload zsh/stat 2>/dev/null
         if (( $+functions[zstat] )); then
           mtime=$(zstat +mtime "$git_root/index")
+        elif command -v stat &>/dev/null; then
+          mtime=$(stat -c %Y "$git_root/index" 2>/dev/null || stat -f %m "$git_root/index" 2>/dev/null)
         else
           mtime=$(date -r "$git_root/index" +%s 2>/dev/null)
         fi
@@ -877,16 +915,20 @@ _ap_async_handler() {
   local fd=$1
   local data
   read -r data <&$fd
-  exec {fd}<&-  # close
-  zle -F $fd    # unregister
-
+  
   local key=${_AP_ASYNC_FDS[$fd]}
   _AP_ASYNC_DATA[$key]=$data
   unset "_AP_ASYNC_FDS[$fd]"
   unset "_AP_ASYNC_PENDING[$key]"
 
-  _ap_render_prompt
-  zle reset-prompt
+  if zle; then
+    zle -F $fd    # unregister
+    exec {fd}<&-  # close
+    _ap_render_prompt
+    zle reset-prompt 2>/dev/null
+  else
+    exec {fd}<&-  # close
+  fi
 }
 
 _ap_async_request() {
@@ -915,7 +957,6 @@ aporia_register_async() {
 # Register hooks
 autoload -Uz add-zsh-hook
 add-zsh-hook precmd _ap_history_setup
-add-zsh-hook precmd _ap_build_prompt
 # (preexec registration is handled at the very end of the file)
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1215,14 +1256,13 @@ aporia-activate-plugin() {
     if grep -q "AP_PLUGINS=(" "$zrc"; then
       # Add to existing array
       if ! grep -q "$name" "$zrc"; then
-         # Using a temp file for portability across sed versions
-         sed "s/AP_PLUGINS=(\([^)]*\))/AP_PLUGINS=(\1 $name)/" "$zrc" > "${zrc}.tmp" && mv "${zrc}.tmp" "$zrc"
+         perl -pi -e "s/AP_PLUGINS=\(([^)]*)\)/AP_PLUGINS=(\$1 $name)/" "$zrc"
          found=1
       fi
     else
       # Create new array before theme source
       if grep -q "aporia.zsh-theme" "$zrc"; then
-        sed "/aporia.zsh-theme/i export AP_PLUGINS=($name)" "$zrc" > "${zrc}.tmp" && mv "${zrc}.tmp" "$zrc"
+        perl -pi -e "s/^(.*aporia.zsh-theme)/export AP_PLUGINS=($name)\n\$1/" "$zrc"
         found=1
       else
         print "\nexport AP_PLUGINS=($name)" >> "$zrc"
@@ -1241,9 +1281,10 @@ aporia-activate-plugin() {
 
 aporia-activate-all() {
   local count=0
-  local name
+  local name bundle_dir
   for name in "${(@k)_AP_PLUGIN_REGISTRY}"; do
-    if [[ -d "$AP_PLUGIN_DIR/$name" && ! "zsh-autosuggestions" == "$name" && ! "zsh-syntax-highlighting" == "$name" ]]; then
+    bundle_dir="${${(%):-%x}:h}/plugins/$name"
+    if [[ (-d "$AP_PLUGIN_DIR/$name" || -d "$bundle_dir") && "$name" != "zsh-autosuggestions" && "$name" != "zsh-syntax-highlighting" ]]; then
       if (( ! ${AP_PLUGINS[(Ie)$name]} )); then
         aporia-activate-plugin "$name"
         ((count++))
@@ -1251,6 +1292,44 @@ aporia-activate-all() {
     fi
   done
   print -P "%F{$AP_C_GREEN}[aporia] $count new plugins activated.%f"
+}
+
+aporia-deactivate-plugin() {
+  local name=$1
+  if [[ -z $name ]]; then
+    print -P "%F{$AP_C_RED}Usage: aporia deactivate <plugin-name>%f"
+    return 1
+  fi
+
+  if [[ "$name" == "zsh-autosuggestions" || "$name" == "zsh-syntax-highlighting" ]]; then
+    print -P "%F{$AP_C_YELLOW}[aporia] '$name' is an essential plugin and cannot be deactivated.%f"
+    return 1
+  fi
+
+  if (( ! ${AP_PLUGINS[(Ie)$name]} )); then
+    print -P "%F{$AP_C_YELLOW}[aporia] '$name' is not currently active.%f"
+    return 0
+  fi
+
+  # Remove from current session array (doesn't unload loaded functions natively without restart)
+  AP_PLUGINS=(${AP_PLUGINS:|name})
+  export AP_PLUGINS
+
+  # Persistent deactivation in ~/.zshrc
+  local zrc="$HOME/.zshrc"
+  local found=0
+  if [[ -f $zrc ]]; then
+    if grep -q "AP_PLUGINS=(" "$zrc"; then
+      perl -pi -e "if (/AP_PLUGINS=\((.*)\)/) { my \$in = \$1; \$in =~ s/\b$name\b//g; \$in =~ s/\s+/ /g; \$in =~ s/^\s+|\s+$//g; s/AP_PLUGINS=\(.*\)/AP_PLUGINS=(\$in)/ }" "$zrc"
+      found=1
+    fi
+  fi
+  
+  if [[ $found -eq 1 ]]; then
+    print -P "%F{$AP_C_GREEN}[aporia] '$name' deactivated in ~/.zshrc. (Restart shell to fully unload)%f"
+  else
+    print -P "%F{$AP_C_YELLOW}[aporia] Could not find AP_PLUGINS in ~/.zshrc. Deactivated for this session only.%f"
+  fi
 }
 
 _ap_load_essentials() {
@@ -1279,14 +1358,18 @@ _aporia_help() {
   print -P "   %F{$AP_C_YELLOW}theme <name>%f  Change the current color theme"
   print -P "   %F{$AP_C_YELLOW}install <p>%f   Download and install a plugin"
   print -P "   %F{$AP_C_YELLOW}activate <p>%f  Enable a plugin and add to .zshrc"
+  print -P "   %F{$AP_C_YELLOW}deactivate <p>%f Disable a plugin and remove from .zshrc"
   print -P "   %F{$AP_C_YELLOW}activate-all%f  Activate all installed plugins"
   print -P "   %F{$AP_C_YELLOW}update%f        Update all installed plugins"
   print -P "   %F{$AP_C_YELLOW}inspect%f       Show raw segment data for debugging"
+  print -P "   %F{$AP_C_YELLOW}doctor%f        Run system health checks"
+  print -P "   %F{$AP_C_YELLOW}upgrade%f       Upgrade Aporia to the latest version"
+  print -P "   %F{$AP_C_YELLOW}benchmark%f     Profile prompt rendering latency"
   print -P "   %F{$AP_C_YELLOW}help%f          Show this help message\n"
 }
 
 _aporia_dashboard() {
-  print -P "\n %F{$AP_C_ORANGE}APORIA%f %F{$AP_C_GRAY}— The Dark Flame Edition %f%B%F{$AP_C_BLUE}v${APORIA_VERSION:-1.1.1}%f%b"
+  print -P "\n %F{$AP_C_ORANGE}APORIA%f %F{$AP_C_GRAY}— %f%B%F{$AP_C_BLUE}v${APORIA_VERSION:-1.1.1}%f%b"
   print -P " %F{$AP_C_GRAY}──────────────────────────────────────────────────%f"
 
   print -P " %F{$AP_C_BLUE}System Info%f"
@@ -1444,12 +1527,101 @@ _aporia_inspect_dump() {
   print -P "  %F{$c_dim}│%f %F{$c_lab}Commands:%f    %F{$c_val}${h_count:-0} entries%f"
 }
 
+_aporia_doctor() {
+  print -P "\n %F{$AP_C_BLUE}Aporia Doctor%f"
+  
+  local pass="%F{$AP_C_GREEN}✓%f"
+  local fail="%F{$AP_C_RED}✗%f"
+  local warn="%F{$AP_C_YELLOW}!%f"
+  
+  # Zsh version
+  local zsh_v_major=$(echo $ZSH_VERSION | cut -d. -f1)
+  local zsh_v_minor=$(echo $ZSH_VERSION | cut -d. -f2)
+  if [[ $zsh_v_major -gt 5 ]] || [[ $zsh_v_major -eq 5 && $zsh_v_minor -ge 8 ]]; then
+    print -P "   $pass Zsh version ($ZSH_VERSION)"
+  else
+    print -P "   $warn Zsh version ($ZSH_VERSION) - 5.8+ recommended"
+  fi
+  
+  # Locale
+  if _ap_is_utf8; then
+    print -P "   $pass UTF-8 Locale"
+  else
+    print -P "   $fail Non-UTF-8 Locale detected. Please export LANG=en_US.UTF-8"
+  fi
+  
+  # Git
+  if (( $+commands[git] )); then
+    print -P "   $pass Git installed"
+  else
+    print -P "   $fail Git not found in PATH"
+  fi
+  
+  # Fonts
+  if [[ ${AP_USE_NERD_FONT:-1} -eq 1 ]]; then
+    print -P "   $pass Nerd Font Mode (ensure your terminal font is set correctly)"
+  else
+    print -P "   $warn Compatibility Mode (Nerd Fonts disabled)"
+  fi
+  
+  print -P ""
+}
+
+_aporia_upgrade() {
+  print -P "\n %F{$AP_C_BLUE}Upgrading Aporia...%f"
+  if command -v brew >/dev/null && brew list aporia >/dev/null 2>&1; then
+    print -P "   %F{$AP_C_GRAY}Homebrew installation detected.%f"
+    brew upgrade aporia
+  else
+    local theme_dir=${${(%):-%x}:h}
+    if [[ -d "$theme_dir/.git" ]]; then
+      print -P "   %F{$AP_C_GRAY}Git installation detected.%f"
+      git -C "$theme_dir" pull origin main
+    else
+      print -P "   %F{$AP_C_GRAY}Manual installation detected. Fetching latest from GitHub...%f"
+      curl -fsSL https://raw.githubusercontent.com/fr3on/aporia/main/aporia.zsh-theme -o "$HOME/.aporia.zsh-theme"
+      curl -fsSL https://raw.githubusercontent.com/fr3on/aporia/main/aporia.plugin.zsh -o "$HOME/.aporia.plugin.zsh"
+      print -P "   %F{$AP_C_GREEN}✓ Successfully downloaded latest version to $HOME%f"
+    fi
+  fi
+}
+
+_aporia_benchmark() {
+  print -P "\n %F{$AP_C_BLUE}Aporia Benchmark%f"
+  typeset -F start end elapsed
+  
+  start=$(_ap_now)
+  local git_res=$(_ap_segment_git)
+  end=$(_ap_now)
+  elapsed=$(( (end - start) * 1000 ))
+  printf -v elapsed_fmt "%.0f ms" $elapsed
+  print -P "   %F{$AP_C_GRAY}Git Segment:%f  $elapsed_fmt"
+  
+  start=$(_ap_now)
+  local lang_res=$(_ap_segment_lang)
+  end=$(_ap_now)
+  elapsed=$(( (end - start) * 1000 ))
+  printf -v elapsed_fmt "%.0f ms" $elapsed
+  print -P "   %F{$AP_C_GRAY}Lang Segment:%f $elapsed_fmt"
+  
+  start=$(_ap_now)
+  _ap_render_prompt >/dev/null
+  end=$(_ap_now)
+  elapsed=$(( (end - start) * 1000 ))
+  printf -v elapsed_fmt "%.0f ms" $elapsed
+  print -P "   %F{$AP_C_GRAY}Render Logic:%f $elapsed_fmt"
+  print -P ""
+}
+
 aporia() {
   local cmd=$1
   case "$cmd" in
     list) aporia-list-plugins ;;
     install) shift; aporia-install-plugin "$@" ;;
     update) aporia-update-plugins ;;
+    doctor) _aporia_doctor ;;
+    upgrade) _aporia_upgrade ;;
+    benchmark) _aporia_benchmark ;;
     theme)
       shift
       local new_theme=$1
@@ -1494,6 +1666,7 @@ aporia() {
       esac
       ;;
     activate) shift; aporia-activate-plugin "$@" ;;
+    deactivate) shift; aporia-deactivate-plugin "$@" ;;
     activate-all) aporia-activate-all ;;
     inspect|debug|env|data) _aporia_inspect_dump ;;
     info|status|"") _aporia_dashboard ;;

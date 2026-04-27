@@ -29,7 +29,7 @@ restore_zshrc() {
   [ -f "$ZSHRC" ] || { warn "$HOME/.zshrc not found — skipping"; return; }
 
   tmp=$(mktemp)
-  grep -Ev "^# aporia\.zsh-theme$|^source ['\"]?$HOME/\.aporia\.zsh-theme['\"]?$" \
+  grep -Ev "^# aporia\.zsh-theme$|^source ['\"]?$HOME/\.aporia\.zsh-theme['\"]?$|^export AP_PLUGINS=|^export AP_THEME=|^export AP_USE_NERD_FONT=|^# Aporia:|^export HISTFILE=.*\.zsh_history|^export HISTSIZE=10000|^export SAVEHIST=10000" \
     "$ZSHRC" > "$tmp" 2>/dev/null || true
 
   # Restore any ZSH_THEME we commented out

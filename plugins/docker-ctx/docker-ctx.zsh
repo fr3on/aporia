@@ -20,10 +20,13 @@ _ap_docker_ctx_segment() {
   echo "%F{$AP_C_DOCKER} $ctx%f"
 }
 
-# Hook into RPROMPT via precmd
-_ap_docker_ctx_precmd() {
-  local seg=$(_ap_docker_ctx_segment)
-  [[ -n $seg ]] && RPROMPT="$seg ${RPROMPT:-}"
-}
-
-add-zsh-hook precmd _ap_docker_ctx_precmd
+if (( $+functions[aporia_register_async] )); then
+  aporia_register_async "docker-ctx" "_ap_docker_ctx_segment"
+else
+  _ap_docker_ctx_precmd() {
+    local seg=$(_ap_docker_ctx_segment)
+    [[ -n $seg ]] && RPROMPT="$seg ${RPROMPT:-}"
+  }
+  autoload -Uz add-zsh-hook
+  add-zsh-hook precmd _ap_docker_ctx_precmd
+fi

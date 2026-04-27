@@ -17,6 +17,12 @@ jobs:
           zsh tests/test_compat.zsh
           zsh tests/test_languages.zsh
           zsh tests/test_utils.zsh
+          zsh tests/test_branding.zsh
+          zsh tests/test_bundled_plugins.zsh
+          zsh tests/test_docker.zsh
+          zsh tests/test_plugins.zsh
+          zsh tests/test_prompt_logic.zsh
+          zsh tests/test_theme.zsh
   lint-macos:
     runs-on: macos-latest
     steps:
@@ -29,3 +35,9 @@ jobs:
           zsh tests/test_compat.zsh
           zsh tests/test_languages.zsh
           zsh tests/test_utils.zsh
+          zsh tests/test_branding.zsh
+          zsh tests/test_bundled_plugins.zsh
+          zsh tests/test_docker.zsh
+          zsh tests/test_plugins.zsh
+          zsh tests/test_prompt_logic.zsh
+          zsh tests/test_theme.zsh
