@@ -338,7 +338,7 @@ patch_bashrc() {
   local MARK="# aporia-bash-bridge"
   [ -f "$BASHRC" ] || touch "$BASHRC"
   if ! grep -qF "$MARK" "$BASHRC" 2>/dev/null; then
-    printf '\n%s\nif [[ $- == *i* ]] && command -v zsh >/dev/null 2>&1; then\n  exec zsh\nfi\n' "$MARK" >> "$BASHRC"
+    printf '\n%s\nif [[ -z "$ZSH_VERSION" ]] && [[ $- == *i* ]] && command -v zsh >/dev/null 2>&1; then\n  exec zsh\nfi\n' "$MARK" >> "$BASHRC"
     ok "Bash → Zsh bridge added"
   fi
 }
@@ -434,7 +434,7 @@ print_summary() {
       ;;
     *)
       printf "  ${FG_GREEN}Reloading shell...${R}\n\n"
-      exec zsh -l
+      exec "$(command -v zsh)" -l
       ;;
   esac
 }
