@@ -8,9 +8,10 @@ jobs:
       - name: Install zsh + shellcheck
         run: sudo apt-get install -y zsh shellcheck
       - name: zsh syntax check
-        run: zsh --no-rcs -c 'zsh -n aporia.zsh-theme'
-      - name: shellcheck scripts
-        run: shellcheck install.sh uninstall.sh
+        run: |
+          zsh -n aporia.zsh-theme
+          zsh -n install.sh
+          zsh -n uninstall.sh
       - name: run tests
         run: |
           zsh tests/test_segments.zsh
@@ -28,7 +29,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: zsh syntax check
-        run: zsh -n aporia.zsh-theme
+        run: |
+          zsh -n aporia.zsh-theme
+          zsh -n install.sh
+          zsh -n uninstall.sh
       - name: run tests
         run: |
           zsh tests/test_segments.zsh
