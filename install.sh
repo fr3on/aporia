@@ -73,14 +73,14 @@ section() { printf "\n  ${BOLD}${FG_BLUE}::${R} ${BOLD}${FG_WHITE}%s${R}\n\n" "$
 spinner() {
   local label="$1"; shift
   local spin=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
-  local idx=0
+  local idx=1
 
   "$@" >/dev/null 2>&1 &
   local pid=$!
 
   while kill -0 "$pid" 2>/dev/null; do
     printf "\r  ${FG_CYAN}${spin[$idx]}${R}  ${DIM}%s${R}" "$label"
-    idx=$(( (idx + 1) % ${#spin[@]} ))
+    idx=$(( (idx % ${#spin[@]}) + 1 ))
     sleep 0.08
   done
   wait "$pid"
