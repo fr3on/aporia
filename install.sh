@@ -85,7 +85,7 @@ spinner() {
   done
   wait "$pid"
   local rc=$?
-  printf "\r"
+  printf "\r\033[K"
   return $rc
 }
 
@@ -250,7 +250,7 @@ setup_plugins() {
   if [ ${#SELECTED_PLUGINS[@]} -eq 0 ] && [ -t 0 ]; then
     printf "  ${FG_GRAY}Install essentials?${R}  ${DIM}zsh-autosuggestions + zsh-syntax-highlighting${R}\n"
     printf "  ${FG_WHITE}[Y/n]${R} "
-    read -r opt
+    read -r opt < /dev/tty
     case "$opt" in
       [nN]*) info "Skipping essentials" ;;
       *)
@@ -351,7 +351,7 @@ configure_fonts() {
   printf "  ${FG_GRAY}Do you use a Nerd Font in your terminal?${R}\n"
   printf "  ${FG_GRAY}(JetBrainsMono, FiraCode, etc.)${R}\n\n"
   printf "  ${FG_WHITE}[Y/n]${R} "
-  read -r opt
+  read -r opt < /dev/tty
   printf "\n"
   case "$opt" in
     [nN]*)
@@ -379,7 +379,7 @@ switch_shell() {
   section "Default Shell"
   printf "  ${FG_GRAY}Your default shell is ${FG_YELLOW}${SHELL##*/}${FG_GRAY}.${R}\n"
   printf "  Switch to Zsh? ${FG_WHITE}[Y/n]${R} "
-  read -r opt
+  read -r opt < /dev/tty
   printf "\n"
   case "$opt" in
     [nN]*) info "Keeping ${SHELL##*/}" ;;
@@ -424,7 +424,7 @@ print_summary() {
   printf "  ${FG_GRAY}Quick commands:  aporia help · aporia doctor · aporia benchmark${R}\n\n"
 
   printf "  ${FG_CYAN}Do you want to reload your shell now?${R} ${FG_WHITE}[Y/n]${R} "
-  read -r opt
+  read -r opt < /dev/tty
   printf "\n"
   case "$opt" in
     [nN]*) 
