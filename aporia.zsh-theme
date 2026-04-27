@@ -1369,7 +1369,7 @@ _aporia_help() {
 }
 
 _aporia_dashboard() {
-  print -P "\n %F{$AP_C_ORANGE}APORIA%f %F{$AP_C_GRAY}— %f%B%F{$AP_C_BLUE}v${APORIA_VERSION:-1.1.1}%f%b"
+  print -P "\n %F{$AP_C_ORANGE}APORIA%f %F{$AP_C_GRAY}— %f%B%F{$AP_C_BLUE}v${APORIA_VERSION:-1.1.4}%f%b"
   print -P " %F{$AP_C_GRAY}──────────────────────────────────────────────────%f"
 
   print -P " %F{$AP_C_BLUE}System Info%f"
