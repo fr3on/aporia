@@ -39,7 +39,7 @@ Aporia is designed for native performance across Unix-like systems. It is formal
 ## Installation
 
 ### 1-Click Install (Universal)
-The fastest way to get started on any system:
+The fastest way to get started on any system. Our modern installer handles dependencies, configures your shell, and reloads your terminal automatically:
 ```bash
 curl -fsSL https://raw.githubusercontent.com/fr3on/aporia/main/install.sh | zsh
 ```
@@ -96,6 +96,7 @@ Aporia features a modular plugin system that keeps your prompt fast while giving
 ### Management Commands
 *   **`aporia install <p>`**: Downloads a third-party plugin.
 *   **`aporia activate <p>`**: Enables a plugin and saves it to your `~/.zshrc`.
+*   **`aporia deactivate <p>`**: Disables a plugin and removes it from your `~/.zshrc`.
 *   **`aporia activate-all`**: Activates all installed plugins.
 *   **`aporia update`**: Pulls the latest changes for all your installed plugins.
 
