@@ -167,9 +167,10 @@ check_shell() {
 
 install_core() {
   section "Installing"
+  local script_dir; script_dir=$(dirname "$0")
 
-  if [ -f "./aporia.zsh-theme" ]; then
-    cp "./aporia.zsh-theme" "$THEME_DEST"
+  if [ -f "$script_dir/aporia.zsh-theme" ]; then
+    cp "$script_dir/aporia.zsh-theme" "$THEME_DEST"
     ok "Theme  ${FG_GRAY}~/.aporia.zsh-theme${R}"
   elif command -v curl >/dev/null 2>&1; then
     spinner "Downloading theme" curl -fsSL "$THEME_URL" -o "$THEME_DEST" \
@@ -179,8 +180,8 @@ install_core() {
     fail "curl not found and no local copy available."
   fi
 
-  if [ -f "./aporia.plugin.zsh" ]; then
-    cp "./aporia.plugin.zsh" "$PLUGIN_SYS_DEST"
+  if [ -f "$script_dir/aporia.plugin.zsh" ]; then
+    cp "$script_dir/aporia.plugin.zsh" "$PLUGIN_SYS_DEST"
     ok "Plugin system  ${FG_GRAY}~/.aporia.plugin.zsh${R}"
   elif command -v curl >/dev/null 2>&1; then
     spinner "Downloading plugin system" curl -fsSL "$PLUGIN_SYS_URL" -o "$PLUGIN_SYS_DEST" \
@@ -189,9 +190,9 @@ install_core() {
   fi
 
   # Always copy bundled first-party plugins so they are available offline
-  if [ -d "./plugins" ]; then
+  if [ -d "$script_dir/plugins" ]; then
     mkdir -p "$PLUGIN_DIR"
-    cp -r "./plugins/"* "$PLUGIN_DIR/" 2>/dev/null || true
+    cp -r "$script_dir/plugins/"* "$PLUGIN_DIR/" 2>/dev/null || true
     ok "Bundled plugins copied to ${FG_GRAY}~/.aporia/plugins/${R}"
   fi
 }
@@ -397,8 +398,9 @@ switch_shell() {
 # ─── UNINSTALLER ─────────────────────────────────────────────────────────────
 
 install_uninstaller() {
-  if [ -f "./uninstall.sh" ]; then
-    cp "./uninstall.sh" "$HOME/.aporia-uninstall.sh"
+  local script_dir; script_dir=$(dirname "$0")
+  if [ -f "$script_dir/uninstall.sh" ]; then
+    cp "$script_dir/uninstall.sh" "$HOME/.aporia-uninstall.sh"
     chmod +x "$HOME/.aporia-uninstall.sh"
   fi
 }
