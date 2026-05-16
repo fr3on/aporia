@@ -1648,6 +1648,50 @@ _ap_has_nerd_font() {
   return 1
 }
 
+_ap_ensure_font_deps() {
+  local missing=()
+  command -v curl >/dev/null 2>&1 || missing+=("curl")
+  command -v unzip >/dev/null 2>&1 || missing+=("unzip")
+  command -v fc-cache >/dev/null 2>&1 || missing+=("fontconfig")
+
+  if [[ ${#missing[@]} -eq 0 ]]; then return 0; fi
+
+  local sudo_cmd=""
+  if [[ "$(id -u)" -ne 0 ]]; then
+    if command -v sudo >/dev/null 2>&1; then
+      sudo_cmd="sudo"
+    else
+      print -P "%F{$AP_C_YELLOW}[aporia] Root privileges needed to install dependencies (${missing[*]}), but sudo is not installed.%f"
+      return 1
+    fi
+  fi
+
+  print -P "%F{$AP_C_BLUE}[aporia] Installing missing dependencies: ${missing[*]}%f"
+  
+  if [[ -n "$sudo_cmd" ]]; then
+    sudo -v || return 1
+  fi
+
+  if command -v apt-get >/dev/null 2>&1; then
+    $sudo_cmd apt-get update -qq && $sudo_cmd apt-get install -y -qq "${missing[@]}"
+  elif command -v apk >/dev/null 2>&1; then
+    $sudo_cmd apk add --quiet "${missing[@]}"
+  elif command -v dnf >/dev/null 2>&1; then
+    $sudo_cmd dnf install -y -q "${missing[@]}"
+  elif command -v yum >/dev/null 2>&1; then
+    $sudo_cmd yum install -y -q "${missing[@]}"
+  elif command -v pacman >/dev/null 2>&1; then
+    $sudo_cmd pacman -Sy --noconfirm --quiet "${missing[@]}"
+  elif command -v zypper >/dev/null 2>&1; then
+    $sudo_cmd zypper install -y -q "${missing[@]}"
+  elif command -v brew >/dev/null 2>&1; then
+    brew install "${missing[@]}"
+  else
+    print -P "%F{$AP_C_YELLOW}[aporia] Could not determine package manager to install dependencies.%f"
+    return 1
+  fi
+}
+
 aporia() {
   local cmd=$1
   case "$cmd" in
@@ -1769,6 +1813,9 @@ aporia() {
       local sub=$1
       if [[ "$sub" == "install" ]]; then
         print -P "\n %F{$AP_C_BLUE}Installing JetBrainsMono Nerd Font...%f"
+        
+        _ap_ensure_font_deps || true
+
         local font_dir="$HOME/.local/share/fonts"
         [[ $(uname -s) == "Darwin" ]] && font_dir="$HOME/Library/Fonts"
         mkdir -p "$font_dir"
