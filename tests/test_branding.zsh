@@ -37,7 +37,7 @@ touch "$MOCK_OS_RELEASE"
 _mock_uname_s="Darwin"
 # Remove mock file so it falls through to uname check
 rm -f "$MOCK_OS_RELEASE"
-assert "[[ $(_ap_get_os_icon) == \"\" ]]" "Detects macOS Apple icon"
+assert "[[ $(_ap_get_os_icon) == \"󰀵\" ]]" "Detects macOS Apple icon"
 
 # 2. Linux Distros
 _mock_uname_s="Linux"

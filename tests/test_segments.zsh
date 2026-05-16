@@ -70,12 +70,12 @@ echo "stash-me" > stash-file
 command git add stash-file
 command git stash push -m "test stash" &>/dev/null
 local git_stash_out=$(_ap_segment_git)
-if [[ "$git_stash_out" == *"${_AP_ICO_STASH}1"* ]]; then
+if [[ "$git_stash_out" == *"${AP_ICONS[STASH]} 1"* ]]; then
   (( _pass++ )); echo "  ✓ Git info shows stash count (1)"
 else
   (( _fail++ )); echo "  ✗ Git info shows stash count (1)"
   echo "    Actual: $git_stash_out"
-  echo "    Expected icon: ${_AP_ICO_STASH}"
+  echo "    Expected icon: ${AP_ICONS[STASH]}"
 fi
 
 # 4. _ap_venv_info
