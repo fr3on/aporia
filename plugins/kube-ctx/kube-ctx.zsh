@@ -22,7 +22,8 @@ _ap_kube_ctx_segment() {
   " "$kubeconfig")
   [[ -z $ns ]] && ns="default"
 
-  echo "%F{$AP_C_KUBE}󱃾 ${ctx}:${ns}%f"
+  local _ico="${_AP_ICO_KUBE:-k8s}"
+  echo "%F{$AP_C_KUBE}${_ico} ${ctx}:${ns}%f"
 }
 
 if (( $+functions[aporia_register_async] )); then

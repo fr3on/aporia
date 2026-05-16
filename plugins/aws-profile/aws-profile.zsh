@@ -16,7 +16,8 @@ _ap_aws_segment() {
   [[ -n $profile ]] && label+="$profile"
   [[ -n $region  ]] && label+=" ${region}"
 
-  echo "%F{$color} $label%f"
+  local _ico="${_AP_ICO_AWS:-aws}"
+  echo "%F{$color}${_ico} $label%f"
 }
 
 if (( $+functions[aporia_register_async] )); then

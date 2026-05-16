@@ -302,7 +302,7 @@ patch_zshrc() {
     done
     if [ -n "$plugin_str" ]; then
       if grep -q "AP_PLUGINS=" "$ZSHRC"; then
-        perl -pi -e "s/AP_PLUGINS=\(([^)]*)\)/AP_PLUGINS=($plugin_str\$1)/" "$ZSHRC"
+        perl -pi -e "s/AP_PLUGINS=\(([^)]*)\)/AP_PLUGINS=(\$1 $plugin_str)/" "$ZSHRC"
         ok "AP_PLUGINS updated"
       else
         printf '\n# Aporia: Active Plugins\nexport AP_PLUGINS=(%s)\n' "$plugin_str" >> "$ZSHRC"
@@ -323,7 +323,7 @@ patch_zshrc() {
     info "Already sourced — no change"
   else
     if ! grep -q "HISTFILE=" "$ZSHRC"; then
-      printf '\n# Aporia: History\nexport HISTFILE="$HOME/.zsh_history"\nexport HISTSIZE=10000\nexport SAVEHIST=10000\n' >> "$ZSHRC"
+      printf '\n# Aporia: History\nexport HISTFILE=\"$HOME/.zsh_history\"\nexport HISTSIZE=10000\nexport SAVEHIST=10000\n' >> "$ZSHRC"
       ok "History defaults added"
     fi
     printf '\n# aporia.zsh-theme\n%s\n' "$SOURCE_LINE" >> "$ZSHRC"
@@ -338,36 +338,126 @@ patch_bashrc() {
   local MARK="# aporia-bash-bridge"
   [ -f "$BASHRC" ] || touch "$BASHRC"
   if ! grep -qF "$MARK" "$BASHRC" 2>/dev/null; then
-    printf '\n%s\nif [[ -z "$ZSH_VERSION" ]] && [[ $- == *i* ]] && command -v zsh >/dev/null 2>&1; then\n  exec zsh\nfi\n' "$MARK" >> "$BASHRC"
+    printf '\n%s\nif [[ -z \"$ZSH_VERSION\" ]] && [[ $- == *i* ]] && command -v zsh >/dev/null 2>&1; then\n  exec zsh\nfi\n' "$MARK" >> "$BASHRC"
     ok "Bash → Zsh bridge added"
   fi
 }
 
 # ─── FONTS ───────────────────────────────────────────────────────────────────
 
+_ap_has_nerd_font() {
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    find "$HOME/Library/Fonts" /Library/Fonts -name "*Nerd Font*" 2>/dev/null | grep -q "." && return 0
+  fi
+  if command -v fc-list >/dev/null 2>&1; then
+    fc-list : family | grep -qi "Nerd Font" && return 0
+  fi
+  return 1
+}
+
+install_nerd_font() {
+  section "Font Installation"
+  
+  local font_name="JetBrainsMono"
+  local version="v3.2.1"
+  local url="https://github.com/ryanoasis/nerd-fonts/releases/download/${version}/${font_name}.zip"
+  local temp_dir; temp_dir=$(mktemp -d)
+  local font_dir=""
+
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    font_dir="$HOME/Library/Fonts"
+  else
+    font_dir="$HOME/.local/share/fonts"
+    mkdir -p "$font_dir"
+  fi
+
+  printf "  ${FG_GRAY}Aporia looks best with a Nerd Font.${R}\n"
+  printf "  ${FG_GRAY}Download and install ${FG_CYAN}${font_name}${FG_GRAY}?${R} ${FG_WHITE}[Y/n]${R} "
+  read -r opt < /dev/tty
+  printf "\n"
+
+  case "$opt" in
+    [nN]*) info "Skipping font installation"; return 1 ;;
+    *)
+      if ! command -v curl >/dev/null 2>&1; then
+        warn "curl not found — cannot download font"
+        return 1
+      fi
+
+      spinner "Downloading $font_name Nerd Font" curl -fsSL "$url" -o "$temp_dir/font.zip"
+      
+      if [[ -f "$temp_dir/font.zip" ]]; then
+        spinner "Extracting to $font_dir" unzip -o "$temp_dir/font.zip" -d "$font_dir"
+        
+        if command -v fc-cache >/dev/null 2>&1; then
+          spinner "Updating font cache" fc-cache -f "$font_dir"
+        fi
+        
+        ok "Installed ${font_name} Nerd Font"
+        warn "Restart your terminal and set its font to '${font_name} Nerd Font'"
+        rm -rf "$temp_dir"
+        return 0
+      else
+        fail "Failed to download font."
+      fi
+      ;;
+  esac
+}
+
 configure_fonts() {
   section "Fonts"
   [ -t 0 ] || return 0
 
-  printf "  ${FG_GRAY}Do you use a Nerd Font in your terminal?${R}\n"
-  printf "  ${FG_GRAY}(JetBrainsMono, FiraCode, etc.)${R}\n\n"
-  printf "  ${FG_WHITE}[Y/n]${R} "
+  local has_nf=0
+  _ap_has_nerd_font && has_nf=1
+
+  printf "  ${FG_GRAY}Which icon set would you like to use?${R}\n"
+  printf "  ${BOLD}1)${R}  Nerd Font      ${DIM}(Rich icons, requires Nerd Font installed)${R}\n"
+  printf "  ${BOLD}2)${R}  Font Awesome   ${DIM}(Classic compatibility)${R}\n"
+  printf "  ${BOLD}3)${R}  Unicode        ${DIM}(Standard symbols, no special font)${R}\n"
+  printf "  ${BOLD}4)${R}  ASCII          ${DIM}(Text-only mode)${R}\n\n"
+  
+  printf "  ${FG_WHITE}Choice [1]:${R} "
   read -r opt < /dev/tty
   printf "\n"
+
   case "$opt" in
-    [nN]*)
+    2)
+      if grep -q "export AP_ICON_STYLE=" "$ZSHRC" 2>/dev/null; then
+        perl -pi -e 's/export AP_ICON_STYLE=.*/export AP_ICON_STYLE="font_awesome"/' "$ZSHRC"
+      else
+        printf '\n# Aporia: Icon Style\nexport AP_ICON_STYLE="font_awesome"\n' >> "$ZSHRC"
+      fi
+      ok "Font Awesome mode enabled"
+      ;;
+    3)
       if grep -q "export AP_USE_NERD_FONT=" "$ZSHRC" 2>/dev/null; then
         perl -pi -e 's/export AP_USE_NERD_FONT=.*/export AP_USE_NERD_FONT=0/' "$ZSHRC"
       else
         printf '\n# Aporia: Compatibility Mode\nexport AP_USE_NERD_FONT=0\n' >> "$ZSHRC"
       fi
-      ok "Compatibility mode  ${FG_GRAY}(standard Unicode)${R}"
+      ok "Unicode compatibility mode enabled"
+      ;;
+    4)
+      if grep -q "export AP_ASCII_FALLBACK=" "$ZSHRC" 2>/dev/null; then
+        perl -pi -e 's/export AP_ASCII_FALLBACK=.*/export AP_ASCII_FALLBACK=1/' "$ZSHRC"
+      else
+        printf '\n# Aporia: ASCII Mode\nexport AP_ASCII_FALLBACK=1\n' >> "$ZSHRC"
+      fi
+      ok "ASCII mode enabled"
       ;;
     *)
+      if [[ $has_nf -eq 0 ]]; then
+        warn "No Nerd Font detected on your system."
+        install_nerd_font
+      fi
+      
       if grep -q "export AP_USE_NERD_FONT=" "$ZSHRC" 2>/dev/null; then
         perl -pi -e 's/export AP_USE_NERD_FONT=.*/export AP_USE_NERD_FONT=1/' "$ZSHRC"
+      else
+        printf '\n# Aporia: Rich Mode\nexport AP_USE_NERD_FONT=1\n' >> "$ZSHRC"
       fi
-      ok "Rich mode  ${FG_GRAY}(Nerd Font icons)${R}"
+      ok "Nerd Font rich mode enabled"
       ;;
   esac
 }

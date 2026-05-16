@@ -86,7 +86,7 @@ _ap_is_linux() { [[ $(uname -s) == "Linux"  ]]; }
 # Distro Detection logic
 _ap_get_os_icon() {
   if _ap_is_macos; then
-    echo ""   # Apple
+    echo "󰀵"
     return
   fi
 
@@ -104,7 +104,7 @@ _ap_get_os_icon() {
       debian)        echo "󰣚" ;;
       ubuntu)        echo "󰕈" ;;
       linuxmint)     echo "󰣭" ;;
-      pop)           echo "󰣛" ;;   # Pop!_OS
+      pop)           echo "󰣥" ;;   # Pop!_OS (Specific icon)
       elementary)    echo "󰣫" ;;
       zorin)         echo "󰣼" ;;
       kali)          echo "󰣘" ;;
@@ -239,104 +239,109 @@ AP_SHOW_TIME=${AP_SHOW_TIME:-1}       # clock on right
 AP_DIR_DEPTH=${AP_DIR_DEPTH:-3}       # how many path segments to show
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-#  GLYPHS & ICONOGRAPHY
-#  Tiered support: Nerd Font > Standard Unicode > ASCII
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-AP_USE_NERD_FONT=${AP_USE_NERD_FONT:-1}   # Toggle rich Nerd Font icons
-AP_ASCII_FALLBACK=${AP_ASCII_FALLBACK:-0} # Force text-only mode
+# ─── ICONOGRAPHY ─────────────────────────────────────────────────────────────
+typeset -gA AP_ICONS
 
+# 1. Define Icons based on Tier
 if [[ $AP_ASCII_FALLBACK -eq 1 ]] || ! _ap_is_utf8; then
   # Tier 3: ASCII Fallback
-  _AP_SEP_L=">"
-  _AP_SEP_R="<"
-  _AP_ICO_GIT="git"
-  _AP_ICO_SSH="ssh"
-  _AP_ICO_DIR="/"
-  _AP_ICO_OK="ok"
-  _AP_ICO_ERR="!!"
-  _AP_ICO_TIME="at"
-  _AP_ICO_EXEC="+"
-  _AP_ICO_PY="py"
-  _AP_ICO_NODE="js"
-  _AP_ICO_RUST="rs"
-  _AP_ICO_GO="go"
-  _AP_ICO_DIRTY="*"
-  _AP_ICO_STAGED="+"
-  _AP_ICO_MODIFIED="!"
-  _AP_ICO_UNTRACKED="?"
-  _AP_ICO_AHEAD="^"
-  _AP_ICO_BEHIND="v"
-  _AP_ICO_STASH="$"
-  _AP_ICO_DOCKER="dkr"
-  _AP_ICO_PROMPT=">"
+  AP_ICONS=(
+    SEP_L     ">"       SEP_R     "<"
+    GIT       "git"     SSH       "ssh"
+    DIR       "/"       OK        "ok"
+    ERR       "!!"      TIME      "at"
+    EXEC      "+"       PROMPT    ">"
+    PY        "py"      NODE      "js"
+    RUST      "rs"      GO        "go"
+    RUBY      "rb"      PHP       "php"
+    JAVA      "java"    CPP       "c++"
+    DENO      "deno"    OS        "L"
+    DIRTY     "*"       STAGED    "+"
+    MODIFIED  "!"       UNTRACKED "?"
+    AHEAD     "^"       BEHIND    "v"
+    STASH     "$"       DOCKER    "dkr"
+    KUBE      "k8s"     AWS       "aws"
+    GCP       "gcp"     AZURE     "az"
+    VPN       "vpn"     NIX       "nix"
+    PVE       "pve"
+  )
 elif [[ $AP_USE_NERD_FONT -eq 0 ]]; then
   # Tier 2: Standard Unicode (Compatibility Mode)
-  _AP_SEP_L="❯"
-  _AP_SEP_R="❮"
-  _AP_ICO_GIT="±"
-  _AP_ICO_SSH="⇄"
-  _AP_ICO_DIR="»"
-  _AP_ICO_OK="✓"
-  _AP_ICO_ERR="✘"
-  _AP_ICO_TIME="at"
-  _AP_ICO_EXEC="+"
-  _AP_ICO_PY="py"
-  _AP_ICO_NODE="js"
-  _AP_ICO_RUST="rs"
-  _AP_ICO_GO="go"
-  _AP_ICO_PHP="php"
-  _AP_ICO_RUBY="rb"
-  _AP_ICO_JAVA="java"
-  _AP_ICO_CPP="c++"
-  _AP_ICO_DIRTY="*"
-  _AP_ICO_STAGED="+"
-  _AP_ICO_MODIFIED="!"
-  _AP_ICO_UNTRACKED="?"
-  _AP_ICO_AHEAD="↑"
-  _AP_ICO_BEHIND="↓"
-  _AP_ICO_STASH="⚑"
-  _AP_ICO_DOCKER="dkr"
-  _AP_ICO_PROMPT="❯"
+  AP_ICONS=(
+    SEP_L     "·"       SEP_R     "·"
+    GIT       "±"       SSH       "⇄"
+    DIR       "»"       OK        "✓"
+    ERR       "✘"       TIME      "◷"
+    EXEC      "⏱"       PROMPT    "❯"
+    PY        "py"      NODE      "js"
+    RUST      "rs"      GO        "go"
+    RUBY      "rb"      PHP       "php"
+    JAVA      "java"    CPP       "c++"
+    DENO      "deno"    OS        "$(_ap_is_macos && echo '⌘' || echo 'L')"
+    DIRTY     "●"       STAGED    "+"
+    MODIFIED  "!"       UNTRACKED "?"
+    AHEAD     "↑"       BEHIND    "↓"
+    STASH     "⚑"       DOCKER    "⬡"
+    KUBE      "⎈"       AWS       "aws"
+    GCP       "gcp"     AZURE     "az"
+    VPN       "vpn"     NIX       "nix"
+    PVE       "pve"
+  )
+elif [[ $AP_ICON_STYLE == "font_awesome" ]]; then
+  # Tier 1.5: Font Awesome
+  AP_ICONS=(
+    SEP_L     ""       SEP_R     ""
+    GIT       ""       SSH       ""
+    DIR       ""       OK        ""
+    ERR       ""       TIME      ""
+    EXEC      ""       PROMPT    ""
+    PY        ""       NODE      ""
+    RUST      ""       GO        ""
+    RUBY      ""       PHP       ""
+    JAVA      ""       CPP       ""
+    DENO      ""       DIRTY     ""
+    STAGED    ""       MODIFIED  ""
+    UNTRACKED ""       AHEAD     ""
+    BEHIND    ""       STASH     ""
+    DOCKER    ""       KUBE      ""
+    AWS       ""       GCP       ""
+    AZURE     ""       VPN       ""
+    NIX       ""       PVE       ""
+  )
+  # OS Logic
+  if _ap_is_macos; then AP_ICONS[OS]=""; elif [[ -n $WSL_DISTRO_NAME ]]; then AP_ICONS[OS]=""; else AP_ICONS[OS]=""; fi
 else
-  # Tier 1: Nerd Font (Rich Mode)
-  _AP_SEP_L="❯"
-  _AP_SEP_R="❮"
-  _AP_ICO_GIT="⎇"
-  _AP_ICO_SSH="⇄"
-  _AP_ICO_DIR="›"
-  _AP_ICO_OK="✓"
-  _AP_ICO_ERR="✘"
-  _AP_ICO_TIME="◷"
-  _AP_ICO_EXEC="󱎫"
-  _AP_ICO_PY=""
-  _AP_ICO_NODE=""
-  _AP_ICO_RUST=""
-  _AP_ICO_GO="󰟓"
-  _AP_ICO_RUBY=""
-  _AP_ICO_PHP="󰌟"
-  _AP_ICO_JAVA=""
-  _AP_ICO_CPP=""
-  _AP_ICO_DIRTY="󰝥"
-  _AP_ICO_STAGED="+"
-  _AP_ICO_MODIFIED="!"
-  _AP_ICO_UNTRACKED="?"
-  _AP_ICO_AHEAD="↑"
-  _AP_ICO_BEHIND="↓"
-  _AP_ICO_STASH="󰟫"
-  _AP_ICO_DOCKER="󰡨"
-  _AP_ICO_PROMPT="❯"
+  # Tier 1: Nerd Font (Classic Elegant Mono Mode)
+  AP_ICONS=(
+    SEP_L     ""       SEP_R     ""
+    GIT       ""       SSH       "󰭎"
+    DIR       ""       OK        ""
+    ERR       ""       TIME      ""
+    EXEC      ""       PROMPT    "❯"
+    PY        ""       NODE      ""
+    RUST      ""       GO        "󰟓"
+    RUBY      ""       PHP       "󰌟"
+    JAVA      ""       CPP       ""
+    DENO      "󰄙"       DIRTY     ""
+    STAGED    ""       MODIFIED  ""
+    UNTRACKED ""       AHEAD     ""
+    BEHIND    ""       STASH     ""
+    DOCKER    ""       KUBE      ""
+    AWS       ""       GCP       ""
+    AZURE     ""       VPN       ""
+    NIX       ""       PVE       ""
+    OS        "$(_ap_get_os_icon)"
+  )
+  # Override OS icon for classic look
+  if _ap_is_macos; then AP_ICONS[OS]=""; elif [[ -n $WSL_DISTRO_NAME ]]; then AP_ICONS[OS]=""; else AP_ICONS[OS]=""; fi
 fi
 
-# [3] OS-Specific Branding
-_AP_ICO_OS=$(_ap_get_os_icon)
-
-# Override OS icon in compatibility modes
-if [[ $AP_ASCII_FALLBACK -eq 1 ]] || ! _ap_is_utf8; then
-  _AP_ICO_OS="L"
-elif [[ $AP_USE_NERD_FONT -eq 0 ]]; then
-  # Tier 2 Unicode fallback — use standard characters on all platforms.
-  if _ap_is_macos; then _AP_ICO_OS="⌘"; else _AP_ICO_OS="L"; fi
-fi
+# Shortcut variables for speed and readability in prompt build
+_AP_ICO_OS="${AP_ICONS[OS]} "
+_AP_ICO_DIR="${AP_ICONS[DIR]} "
+_AP_SEP_L=" ${AP_ICONS[SEP_L]} "
+_AP_SEP_R=" ${AP_ICONS[SEP_R]} "
+_AP_ICO_PROMPT="${AP_ICONS[PROMPT]}"
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  COLOR PALETTE  (256-color for max terminal compat)
@@ -504,25 +509,29 @@ _ap_segment_git() {
 
   # Build label parts
   local -a git_parts=()
-  git_parts+=("${_AP_ICO_GIT} $branch")
+  git_parts+=("${AP_ICONS[GIT]} $branch")
   
+  local -a status_parts=()
   if [[ -n $dirty ]]; then
-    (( staged    > 0 )) && git_parts+=("${_AP_ICO_STAGED}$staged")
-    (( modified  > 0 )) && git_parts+=("${_AP_ICO_MODIFIED}$modified")
-    (( untracked > 0 )) && git_parts+=("${_AP_ICO_UNTRACKED}$untracked")
+    (( staged    > 0 )) && status_parts+=("${AP_ICONS[STAGED]} $staged")
+    (( modified  > 0 )) && status_parts+=("${AP_ICONS[MODIFIED]} $modified")
+    (( untracked > 0 )) && status_parts+=("${AP_ICONS[UNTRACKED]} $untracked")
     
     # Fallback: if somehow dirty but no specific counts, show the indicator
-    if [[ ${#git_parts} -eq 1 ]]; then
-       git_parts+=("${_AP_ICO_DIRTY}")
+    if [[ ${#status_parts} -eq 0 ]]; then
+       status_parts+=("${AP_ICONS[DIRTY]}")
     fi
   fi
   
-  (( ahead  > 0 )) && git_parts+=("${_AP_ICO_AHEAD}$ahead")
-  (( behind > 0 )) && git_parts+=("${_AP_ICO_BEHIND}$behind")
-  (( stash  > 0 )) && git_parts+=("${_AP_ICO_STASH}$stash")
+  (( ahead  > 0 )) && status_parts+=("${AP_ICONS[AHEAD]} $ahead")
+  (( behind > 0 )) && status_parts+=("${AP_ICONS[BEHIND]} $behind")
+  (( stash  > 0 )) && status_parts+=("${AP_ICONS[STASH]} $stash")
 
-  # Join with single spaces
-  local label="${(j: :)git_parts}"
+  # Join branch and status with an elegant separator
+  local label="${git_parts[1]}"
+  if [[ ${#status_parts} -gt 0 ]]; then
+    label+=" %F{$AP_C_GRAY}·%f ${(j:  :)status_parts}"
+  fi
 
   # Colour: green=clean, yellow=dirty, red=conflict zone
   local color=$AP_C_GREEN
@@ -582,7 +591,7 @@ _ap_segment_lang() {
 
   # Run version commands only for found projects
   if [[ -n ${found[deno]} ]]; then
-    local denov; denov=$(command deno --version 2>/dev/null | head -n 1 | awk '{print $2}') && [[ -n $denov ]] && parts+=("%F{$AP_C_WHITE}🦕 $denov%f")
+    local denov; denov=$(command deno --version 2>/dev/null | head -n 1 | awk '{print $2}') && [[ -n $denov ]] && parts+=("%F{$AP_C_WHITE}${AP_ICONS[DENO]} $denov%f")
   elif [[ -n ${found[node]} ]]; then
     local nv
     if [[ -n $nvm_ver ]]; then
@@ -591,28 +600,28 @@ _ap_segment_lang() {
       nv=$(command node --version 2>/dev/null)
       nv="${nv#v}"
     fi
-    [[ -n $nv ]] && parts+=("%F{$AP_C_GREEN}${_AP_ICO_NODE} $nv%f")
+    [[ -n $nv ]] && parts+=("%F{$AP_C_GREEN}${AP_ICONS[NODE]} $nv%f")
   fi
   if [[ -n ${found[rust]} ]]; then
-    local rv; rv=$(command rustc --version 2>/dev/null | awk '{print $2}') && [[ -n $rv ]] && parts+=("%F{$AP_C_ORANGE}${_AP_ICO_RUST} $rv%f")
+    local rv; rv=$(command rustc --version 2>/dev/null | awk '{print $2}') && [[ -n $rv ]] && parts+=("%F{$AP_C_ORANGE}${AP_ICONS[RUST]} $rv%f")
   fi
   if [[ -n ${found[go]} ]]; then
-    local gv; gv=$(command go version 2>/dev/null | awk '{print $3}') && [[ -n $gv ]] && parts+=("%F{$AP_C_CYAN}${_AP_ICO_GO} ${gv#go}%f")
+    local gv; gv=$(command go version 2>/dev/null | awk '{print $3}') && [[ -n $gv ]] && parts+=("%F{$AP_C_CYAN}${AP_ICONS[GO]} ${gv#go}%f")
   fi
   if [[ -n ${found[ruby]} ]]; then
-    local rbv; rbv=$(command ruby -e 'puts RUBY_VERSION' 2>/dev/null) && [[ -n $rbv ]] && parts+=("%F{$AP_C_RED}${_AP_ICO_RUBY} $rbv%f")
+    local rbv; rbv=$(command ruby -e 'puts RUBY_VERSION' 2>/dev/null) && [[ -n $rbv ]] && parts+=("%F{$AP_C_RED}${AP_ICONS[RUBY]} $rbv%f")
   fi
   if [[ -n ${found[php]} ]]; then
-    local phpv; phpv=$(command php -v 2>/dev/null | head -n 1 | awk '{print $2}') && [[ -n $phpv ]] && parts+=("%F{$AP_C_PURPLE}${_AP_ICO_PHP} $phpv%f")
+    local phpv; phpv=$(command php -v 2>/dev/null | head -n 1 | awk '{print $2}') && [[ -n $phpv ]] && parts+=("%F{$AP_C_PURPLE}${AP_ICONS[PHP]} $phpv%f")
   fi
   if [[ -n ${found[java]} ]]; then
-    local jv; jv=$(command java -version 2>&1 | head -n 1 | awk -F '"' '{print $2}') && [[ -n $jv ]] && parts+=("%F{$AP_C_WHITE}${_AP_ICO_JAVA} $jv%f")
+    local jv; jv=$(command java -version 2>&1 | head -n 1 | awk -F '"' '{print $2}') && [[ -n $jv ]] && parts+=("%F{$AP_C_WHITE}${AP_ICONS[JAVA]} $jv%f")
   fi
   if [[ -n ${found[python]} ]]; then
-    local pyv; pyv=$(command python3 --version 2>/dev/null | awk '{print $2}') && [[ -n $pyv ]] && parts+=("%F{$AP_C_YELLOW}${_AP_ICO_PY} $pyv%f")
+    local pyv; pyv=$(command python3 --version 2>/dev/null | awk '{print $2}') && [[ -n $pyv ]] && parts+=("%F{$AP_C_YELLOW}${AP_ICONS[PY]} $pyv%f")
   fi
   if [[ -n ${found[cpp]} ]]; then
-    local cppv; cppv=$(command c++ --version 2>/dev/null | head -n 1 | awk '{print $NF}') && [[ -n $cppv ]] && parts+=("%F{$AP_C_BLUE}${_AP_ICO_CPP} $cppv%f")
+    local cppv; cppv=$(command c++ --version 2>/dev/null | head -n 1 | awk '{print $NF}') && [[ -n $cppv ]] && parts+=("%F{$AP_C_BLUE}${AP_ICONS[CPP]} $cppv%f")
   fi
 
   local out="${(j: :)parts}"
@@ -724,7 +733,7 @@ _ap_calc_exec_time() {
     # For sub-second commands, show 2 decimal places
     printf -v out "%.2fs" $elapsed
   fi
-  _ap_last_exec_time="${_AP_ICO_EXEC} $out"
+  _ap_last_exec_time="${AP_ICONS[EXEC]} $out"
 }
 
 
@@ -789,9 +798,8 @@ _ap_render_prompt() {
   LEFT+="%F{$AP_C_GRAY}${_AP_ICO_OS} %f"
 
   # [2] SSH and User context
-  if (( AP_SHOW_SSH )) && [[ -n $SSH_CONNECTION || -n $SSH_CLIENT ]]; then
-    # Show SSH icon and user@host in orange/white
-    LEFT+="%F{$AP_C_ORANGE}${_AP_ICO_SSH} %F{$AP_C_WHITE}%n@%m %f"
+  if (( AP_SHOW_SSH )) && [[ -n $SSH_CONNECTION || -n $SSH_CLIENT || -n $SSH_TTY ]]; then
+    LEFT+="%F{$AP_C_ORANGE}${AP_ICONS[SSH]} %F{$AP_C_WHITE}%n@%m %f"
   fi
 
   # [3] Directory
@@ -800,13 +808,13 @@ _ap_render_prompt() {
   # [4] Venv / Conda
   local venv=$(_ap_segment_venv)
   if [[ -n $venv ]]; then
-    LEFT+="%F{$AP_C_GRAY}${_AP_SEP_L} %F{$AP_C_CYAN}${_AP_ICO_PY} $venv "
+    LEFT+="%F{$AP_C_GRAY}${_AP_SEP_L}%F{$AP_C_CYAN}${AP_ICONS[PY]} $venv "
   fi
 
   # [5] Docker Context
   local dkr=$(_ap_segment_docker)
   if [[ -n $dkr ]]; then
-    LEFT+="%F{$AP_C_GRAY}${_AP_SEP_L} %F{$AP_C_BLUE}${_AP_ICO_DOCKER} $dkr "
+    LEFT+="%F{$AP_C_GRAY}${_AP_SEP_L}%F{$AP_C_BLUE}${AP_ICONS[DOCKER]} $dkr "
   fi
 
   # [6] Git segment
@@ -819,13 +827,13 @@ _ap_render_prompt() {
 
     local git_raw=${_AP_ASYNC_DATA[git]:-}
     if [[ -z $git_raw ]]; then
-      git_raw="$AP_C_GRAY ${_AP_ICO_GIT} ..."
+      git_raw="$AP_C_GRAY ${AP_ICONS[GIT]} ..."
     fi
 
     if [[ $git_raw != "NONE" ]]; then
       local git_color=${git_raw%% *}
       local git_label=${git_raw#* }
-      LEFT+="%F{$AP_C_GRAY}${_AP_SEP_L} %F{$git_color}$git_label "
+      LEFT+="%F{$AP_C_GRAY}${_AP_SEP_L}%F{$git_color}$git_label "
     fi
   fi
 
@@ -845,7 +853,7 @@ _ap_render_prompt() {
 
   # [1] Exit code (non-zero only)
   if (( AP_SHOW_EXIT_CODE && last_exit != 0 )); then
-    RIGHT+="%F{$AP_C_RED}${_AP_ICO_ERR} $last_exit  %f"
+    RIGHT+="%F{$AP_C_RED}${AP_ICONS[ERR]} $last_exit  %f"
   fi
 
   # [2] Execution time (hide if < 40 chars)
@@ -878,7 +886,7 @@ _ap_render_prompt() {
 
   # [4] Clock (hide if < 80 chars)
   if (( AP_SHOW_TIME )) && (( width > 80 )); then
-    RIGHT+="%F{$AP_C_GRAY}${_AP_ICO_TIME} %D{%H:%M}%f%k%b"
+    RIGHT+="%F{$AP_C_GRAY}${AP_ICONS[TIME]} %D{%H:%M}%f%k%b"
   fi
 
   # [5] Plugin Async Segments (Right Side)
@@ -1355,6 +1363,7 @@ _aporia_help() {
   print -P "   %F{$AP_C_YELLOW}info%f          Show theme and system status (default)"
   print -P "   %F{$AP_C_YELLOW}list%f          List all available plugins and their status"
   print -P "   %F{$AP_C_YELLOW}theme <name>%f  Change the current color theme"
+  print -P "   %F{$AP_C_YELLOW}icons <name>%f  Switch icon set (nerd, font_awesome, unicode, ascii)"
   print -P "   %F{$AP_C_YELLOW}install <p>%f   Download and install a plugin"
   print -P "   %F{$AP_C_YELLOW}activate <p>%f  Enable a plugin and add to .zshrc"
   print -P "   %F{$AP_C_YELLOW}deactivate <p>%f Disable a plugin and remove from .zshrc"
@@ -1372,11 +1381,12 @@ _aporia_dashboard() {
   print -P " %F{$AP_C_GRAY}──────────────────────────────────────────────────%f"
 
   print -P " %F{$AP_C_BLUE}System Info%f"
-  print -P "   %F{$AP_C_WHITE}${(r:12:):-OS}:%f  ${_AP_ICO_OS:-?} $(_ap_get_os_name)"
+  print -P "   %F{$AP_C_WHITE}${(r:12:):-OS}:%f  ${AP_ICONS[OS]} $(_ap_get_os_name)"
   print -P "   %F{$AP_C_WHITE}${(r:12:):-Shell}:%f  Zsh $ZSH_VERSION"
   
   local icon_mode="Standard Unicode"
   [[ ${AP_USE_NERD_FONT:-1} -eq 1 ]] && icon_mode="Nerd Font (Rich)"
+  [[ ${AP_ICON_STYLE:-"nerd"} == "font_awesome" ]] && icon_mode="Font Awesome"
   [[ ${AP_ASCII_FALLBACK:-0} -eq 1 ]] && icon_mode="ASCII Fallback"
   print -P "   %F{$AP_C_WHITE}${(r:12:):-Icons}:%f  $icon_mode"
   
@@ -1423,10 +1433,19 @@ _aporia_inspect_dump() {
   local c_val=$AP_C_CYAN
   local c_dim=$AP_C_GRAY
 
-  print -P "\n %F{$AP_C_ORANGE}󰂚%f %B%F{$c_head}APORIA%f%b %F{$c_dim}— Context%f"
+  local _nf_on=0
+  [[ ${AP_USE_NERD_FONT:-1} -eq 1 && ${AP_ASCII_FALLBACK:-0} -eq 0 ]] && _nf_on=1
+  local _dash_ico="";   (( _nf_on )) && _dash_ico="󰂚 "
+  local _proj_ico="";   (( _nf_on )) && _proj_ico="󰉋 "
+  local _git_ico="";    (( _nf_on )) && _git_ico="󰊢 "
+  local _infra_ico="";  (( _nf_on )) && _infra_ico="󰟀 "
+  local _telem_ico="";  (( _nf_on )) && _telem_ico="󰄨 "
+  local _hist_ico="";   (( _nf_on )) && _hist_ico="󰋚 "
+
+  print -P "\n %F{$AP_C_ORANGE}${_dash_ico}%f %B%F{$c_head}APORIA%f%b %F{$c_dim}— Context%f"
   print -P " %F{$c_dim}──────────────────────────────────────────────────────────────────%f"
 
-  print -P " %F{$c_sub}󰉋 Project Status%f"
+  print -P " %F{$c_sub}${_proj_ico}Project Status%f"
   print -P "  %F{$c_dim}│%f %F{$c_lab}Root:%f        %F{$c_val}$(git rev-parse --show-toplevel 2>/dev/null || echo $PWD)%f"
   print -P "  %F{$c_dim}│%f %F{$c_lab}Working Dir:%f %F{$c_val}$PWD%f"
   
@@ -1461,7 +1480,7 @@ _aporia_inspect_dump() {
   
   if command git rev-parse --is-inside-work-tree &>/dev/null; then
     print -P "  %F{$c_dim}│%f"
-    print -P "  %F{$c_dim}├─%f %F{$c_sub}󰊢 Git Engine%f"
+    print -P "  %F{$c_dim}├─%f %F{$c_sub}${_git_ico}Git Engine%f"
     local branch=$(git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD 2>/dev/null)
     local remote=$(git config --get branch.$branch.remote 2>/dev/null || echo "none")
     local upstream=$(git config --get branch.$branch.merge 2>/dev/null || echo "none")
@@ -1471,7 +1490,7 @@ _aporia_inspect_dump() {
     print -P "  %F{$c_dim}│%f  %F{$c_lab}Stashed:%f  %F{$c_val}$(git stash list 2>/dev/null | wc -l | tr -d ' ') layers%f"
   fi
 
-  print -P "\n %F{$c_sub}󰟀 Infrastructure Context%f"
+  print -P "\n %F{$c_sub}${_infra_ico}Infrastructure Context%f"
   
   local dkr=$(_ap_segment_docker 2>/dev/null || echo "None")
   local venv=$(_ap_segment_venv 2>/dev/null || echo "None")
@@ -1497,7 +1516,7 @@ _aporia_inspect_dump() {
   print -P "  %F{$c_dim}│%f %F{$c_lab}cPanel:%f     %F{$c_val}$cpanel%f"
   print -P "  %F{$c_dim}│%f %F{$c_lab}Local IP:%f   %F{$c_val}${local_ip:-unknown}%f"
 
-  print -P "\n %F{$c_sub}󰄨 System Telemetry%f"
+  print -P "\n %F{$c_sub}${_telem_ico}System Telemetry%f"
   
   if (( $+functions[_ap_telemetry_segment] )); then
     local t_data=$(_ap_telemetry_segment raw 2>/dev/null)
@@ -1514,7 +1533,7 @@ _aporia_inspect_dump() {
   print -P "  %F{$c_dim}│%f %F{$c_lab}OS/Distro:%f   %F{$c_dim}$os_info%f"
   print -P "  %F{$c_dim}│%f %F{$c_lab}Session PID:%f %F{$c_dim}$$%f"
 
-  print -P "\n %F{$c_sub}󰋚 History%f"
+  print -P "\n %F{$c_sub}${_hist_ico}History%f"
   local h_file="${HISTFILE:-None}"
   local h_size="${HISTSIZE:-0}"
   local h_save="${SAVEHIST:-0}"
@@ -1557,10 +1576,14 @@ _aporia_doctor() {
   fi
   
   # Fonts
-  if [[ ${AP_USE_NERD_FONT:-1} -eq 1 ]]; then
-    print -P "   $pass Nerd Font Mode (ensure your terminal font is set correctly)"
+  if [[ ${AP_ASCII_FALLBACK:-0} -eq 1 ]]; then
+    print -P "   $warn ASCII Mode (text-only)"
+  elif [[ ${AP_USE_NERD_FONT:-1} -eq 0 ]]; then
+    print -P "   $warn Compatibility Mode (Standard Unicode)"
+  elif [[ ${AP_ICON_STYLE:-"nerd"} == "font_awesome" ]]; then
+    print -P "   $pass Font Awesome Mode"
   else
-    print -P "   $warn Compatibility Mode (Nerd Fonts disabled)"
+    print -P "   $pass Nerd Font Mode (Rich Icons)"
   fi
   
   print -P ""
@@ -1621,6 +1644,53 @@ aporia() {
     doctor) _aporia_doctor ;;
     upgrade) _aporia_upgrade ;;
     benchmark) _aporia_benchmark ;;
+    icons)
+      shift
+      local style=$1
+      if [[ -z $style ]]; then
+        print -P "\n %F{$AP_C_BLUE}Available Icon Sets:%f"
+        print -P "   %F{$AP_C_CYAN}nerd%f          Nerd Font (Material/Devicons/etc)"
+        print -P "   %F{$AP_C_CYAN}font_awesome%f  Font Awesome Free"
+        print -P "   %F{$AP_C_CYAN}unicode%f       Standard Unicode Compatibility"
+        print -P "   %F{$AP_C_CYAN}ascii%f         Text-only Mode"
+        print -P "\n %F{$AP_C_GRAY}Usage: aporia icons <set>%f\n"
+        return 0
+      fi
+
+      local zrc="$HOME/.zshrc"
+      case "$style" in
+        nerd)
+          export AP_USE_NERD_FONT=1 AP_ICON_STYLE="nerd" AP_ASCII_FALLBACK=0
+          perl -pi -e 's/^export AP_USE_NERD_FONT=.*/export AP_USE_NERD_FONT=1/' "$zrc" 2>/dev/null
+          perl -pi -e 's/^export AP_ICON_STYLE=.*/export AP_ICON_STYLE="nerd"/' "$zrc" 2>/dev/null
+          perl -pi -e 's/^export AP_ASCII_FALLBACK=.*/export AP_ASCII_FALLBACK=0/' "$zrc" 2>/dev/null
+          ;;
+        font_awesome)
+          export AP_USE_NERD_FONT=1 AP_ICON_STYLE="font_awesome" AP_ASCII_FALLBACK=0
+          perl -pi -e 's/^export AP_USE_NERD_FONT=.*/export AP_USE_NERD_FONT=1/' "$zrc" 2>/dev/null
+          if grep -q "export AP_ICON_STYLE=" "$zrc" 2>/dev/null; then
+            perl -pi -e 's/^export AP_ICON_STYLE=.*/export AP_ICON_STYLE="font_awesome"/' "$zrc"
+          else
+            print "\nexport AP_ICON_STYLE=\"font_awesome\"" >> "$zrc"
+          fi
+          perl -pi -e 's/^export AP_ASCII_FALLBACK=.*/export AP_ASCII_FALLBACK=0/' "$zrc" 2>/dev/null
+          ;;
+        unicode)
+          export AP_USE_NERD_FONT=0 AP_ASCII_FALLBACK=0
+          perl -pi -e 's/^export AP_USE_NERD_FONT=.*/export AP_USE_NERD_FONT=0/' "$zrc" 2>/dev/null
+          perl -pi -e 's/^export AP_ASCII_FALLBACK=.*/export AP_ASCII_FALLBACK=0/' "$zrc" 2>/dev/null
+          ;;
+        ascii)
+          export AP_ASCII_FALLBACK=1
+          perl -pi -e 's/^export AP_ASCII_FALLBACK=.*/export AP_ASCII_FALLBACK=1/' "$zrc" 2>/dev/null
+          ;;
+        *) print -P "%F{$AP_C_RED}[aporia] Unknown icon set: $style%f"; return 1 ;;
+      esac
+      
+      # Source self to re-initialize icons
+      source "${${(%):-%x}:-aporia.zsh-theme}" 2>/dev/null
+      print -P "%F{$AP_C_GREEN}[aporia] Icon set switched to '$style'.%f"
+      ;;
     theme)
       shift
       local new_theme=$1

@@ -21,7 +21,8 @@ _ap_proxmox_segment() {
 
   # Use the Manjaro-like stylized P icon (󱘊) or a generic server icon (󰒄)
   # Aporia preference: 󱘊 for PVE matches the branding silhouette
-  echo "%F{$AP_C_PROXMOX}󱘊 $label%f"
+  local _ico="${_AP_ICO_PVE:-pve}"
+  echo "%F{$AP_C_PROXMOX}${_ico} $label%f"
 }
 
 _ap_proxmox_precmd() {

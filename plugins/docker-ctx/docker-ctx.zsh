@@ -17,7 +17,8 @@ _ap_docker_ctx_segment() {
     [[ -z $ctx ]] && ctx="default"
   fi
 
-  echo "%F{$AP_C_DOCKER} $ctx%f"
+  local _ico="${_AP_ICO_DOCKER:-dkr}"
+  echo "%F{$AP_C_DOCKER}${_ico} $ctx%f"
 }
 
 if (( $+functions[aporia_register_async] )); then

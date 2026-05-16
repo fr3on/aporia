@@ -14,7 +14,8 @@ _ap_nix_segment() {
     return
   fi
 
-  echo "%F{$AP_C_NIX}󱄅 $label%f"
+  local _ico="${_AP_ICO_NIX:-nix}"
+  echo "%F{$AP_C_NIX}${_ico} $label%f"
 }
 
 _ap_nix_precmd() {
