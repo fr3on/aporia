@@ -1638,6 +1638,16 @@ _aporia_benchmark() {
   print -P ""
 }
 
+_ap_has_nerd_font() {
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    find "$HOME/Library/Fonts" /Library/Fonts -name "*Nerd Font*" 2>/dev/null | grep -q "." && return 0
+  fi
+  if command -v fc-list >/dev/null 2>&1; then
+    fc-list : family | grep -qi "Nerd Font" && return 0
+  fi
+  return 1
+}
+
 aporia() {
   local cmd=$1
   case "$cmd" in
@@ -1681,8 +1691,17 @@ aporia() {
           _ap_update_zrc "AP_ICON_STYLE" "nerd" "$zrc"
           _ap_update_zrc "AP_ASCII_FALLBACK" "0" "$zrc"
           
-          if [[ -n $SSH_CLIENT || -n $SSH_TTY ]]; then
-             print -P "%F{$AP_C_YELLOW}[aporia] Warning: You are connected via SSH. Ensure a Nerd Font is installed and set in your local terminal emulator.%f"
+          if ! _ap_has_nerd_font; then
+            print -P "\n%F{$AP_C_YELLOW}[aporia] Nerd Font not detected on this system.%f"
+            if [[ -n $SSH_CLIENT || -n $SSH_TTY || -n $SSH_CONNECTION ]]; then
+               print -P "%F{$AP_C_YELLOW}         Since you are connected remotely, please ensure the font is installed on your LOCAL terminal emulator.%f"
+            fi
+            print -P "         Would you like to install JetBrainsMono Nerd Font on this system? [Y/n]"
+            read -rq opt </dev/tty
+            print ""
+            if [[ "$opt" == "y" || "$opt" == "Y" ]]; then
+              aporia fonts install
+            fi
           fi
           ;;
         font_awesome)
