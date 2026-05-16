@@ -248,18 +248,9 @@ setup_plugins() {
     info "Existing plugins: ${AP_PLUGINS[*]}"
   fi
 
-  if [ ${#SELECTED_PLUGINS[@]} -eq 0 ] && [ -t 0 ]; then
-    printf "  ${FG_GRAY}Install essentials?${R}  ${DIM}zsh-autosuggestions + zsh-syntax-highlighting${R}\n"
-    printf "  ${FG_WHITE}[Y/n]${R} "
-    read -r opt < /dev/tty
-    case "$opt" in
-      [nN]*) info "Skipping essentials" ;;
-      *)
-        SELECTED_PLUGINS+=("zsh-autosuggestions" "zsh-syntax-highlighting")
-        ;;
-    esac
-    printf "\n"
-  fi
+  # Auto-install essentials
+  [[ ! " ${SELECTED_PLUGINS[*]} " == *" zsh-autosuggestions "* ]] && SELECTED_PLUGINS+=("zsh-autosuggestions")
+  [[ ! " ${SELECTED_PLUGINS[*]} " == *" zsh-syntax-highlighting "* ]] && SELECTED_PLUGINS+=("zsh-syntax-highlighting")
 
   local total=${#SELECTED_PLUGINS[@]}
   local idx=0

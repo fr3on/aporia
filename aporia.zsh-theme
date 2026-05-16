@@ -63,6 +63,8 @@ add-zsh-hook precmd  _ap_build_prompt
 # Aporia Version
 export APORIA_VERSION="1.1.4"
 export ZSH_THEME_NAME="aporia"
+export APORIA_THEME_PATH="${${(%):-%x}:A}"
+export APORIA_DIR="${APORIA_THEME_PATH:h}"
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  INTERNAL UTILS
@@ -1373,6 +1375,7 @@ _aporia_help() {
   print -P "   %F{$AP_C_YELLOW}doctor%f        Run system health checks"
   print -P "   %F{$AP_C_YELLOW}upgrade%f       Upgrade Aporia to the latest version"
   print -P "   %F{$AP_C_YELLOW}benchmark%f     Profile prompt rendering latency"
+  print -P "   %F{$AP_C_YELLOW}fonts%f         Manage font installation"
   print -P "   %F{$AP_C_YELLOW}help%f          Show this help message\n"
 }
 
@@ -1657,38 +1660,51 @@ aporia() {
         return 0
       fi
 
+      _ap_update_zrc() {
+        local key=$1 val=$2 file=$3
+        if grep -q "^export $key=" "$file" 2>/dev/null; then
+          perl -pi -e "s/^export $key=.*/export $key=\"\$val\"/" "$file" 2>/dev/null || sed -i.bak "s/^export $key=.*/export $key=\"\$val\"/" "$file" 2>/dev/null
+        else
+          if grep -q "aporia.zsh-theme" "$file" 2>/dev/null; then
+            perl -pi -e "s/^(.*aporia.zsh-theme)/export $key=\"\$val\"\n\$1/" "$file" 2>/dev/null || sed -i.bak -e "/aporia.zsh-theme/i\\" -e "export $key=\"\$val\"" "$file" 2>/dev/null
+          else
+            print "\nexport $key=\"\$val\"" >> "$file"
+          fi
+        fi
+      }
+
       local zrc="$HOME/.zshrc"
       case "$style" in
         nerd)
           export AP_USE_NERD_FONT=1 AP_ICON_STYLE="nerd" AP_ASCII_FALLBACK=0
-          perl -pi -e 's/^export AP_USE_NERD_FONT=.*/export AP_USE_NERD_FONT=1/' "$zrc" 2>/dev/null
-          perl -pi -e 's/^export AP_ICON_STYLE=.*/export AP_ICON_STYLE="nerd"/' "$zrc" 2>/dev/null
-          perl -pi -e 's/^export AP_ASCII_FALLBACK=.*/export AP_ASCII_FALLBACK=0/' "$zrc" 2>/dev/null
+          _ap_update_zrc "AP_USE_NERD_FONT" "1" "$zrc"
+          _ap_update_zrc "AP_ICON_STYLE" "nerd" "$zrc"
+          _ap_update_zrc "AP_ASCII_FALLBACK" "0" "$zrc"
+          
+          if [[ -n $SSH_CLIENT || -n $SSH_TTY ]]; then
+             print -P "%F{$AP_C_YELLOW}[aporia] Warning: You are connected via SSH. Ensure a Nerd Font is installed and set in your local terminal emulator.%f"
+          fi
           ;;
         font_awesome)
           export AP_USE_NERD_FONT=1 AP_ICON_STYLE="font_awesome" AP_ASCII_FALLBACK=0
-          perl -pi -e 's/^export AP_USE_NERD_FONT=.*/export AP_USE_NERD_FONT=1/' "$zrc" 2>/dev/null
-          if grep -q "export AP_ICON_STYLE=" "$zrc" 2>/dev/null; then
-            perl -pi -e 's/^export AP_ICON_STYLE=.*/export AP_ICON_STYLE="font_awesome"/' "$zrc"
-          else
-            print "\nexport AP_ICON_STYLE=\"font_awesome\"" >> "$zrc"
-          fi
-          perl -pi -e 's/^export AP_ASCII_FALLBACK=.*/export AP_ASCII_FALLBACK=0/' "$zrc" 2>/dev/null
+          _ap_update_zrc "AP_USE_NERD_FONT" "1" "$zrc"
+          _ap_update_zrc "AP_ICON_STYLE" "font_awesome" "$zrc"
+          _ap_update_zrc "AP_ASCII_FALLBACK" "0" "$zrc"
           ;;
         unicode)
           export AP_USE_NERD_FONT=0 AP_ASCII_FALLBACK=0
-          perl -pi -e 's/^export AP_USE_NERD_FONT=.*/export AP_USE_NERD_FONT=0/' "$zrc" 2>/dev/null
-          perl -pi -e 's/^export AP_ASCII_FALLBACK=.*/export AP_ASCII_FALLBACK=0/' "$zrc" 2>/dev/null
+          _ap_update_zrc "AP_USE_NERD_FONT" "0" "$zrc"
+          _ap_update_zrc "AP_ASCII_FALLBACK" "0" "$zrc"
           ;;
         ascii)
           export AP_ASCII_FALLBACK=1
-          perl -pi -e 's/^export AP_ASCII_FALLBACK=.*/export AP_ASCII_FALLBACK=1/' "$zrc" 2>/dev/null
+          _ap_update_zrc "AP_ASCII_FALLBACK" "1" "$zrc"
           ;;
         *) print -P "%F{$AP_C_RED}[aporia] Unknown icon set: $style%f"; return 1 ;;
       esac
       
       # Source self to re-initialize icons
-      source "${${(%):-%x}:-aporia.zsh-theme}" 2>/dev/null
+      source "$APORIA_THEME_PATH" 2>/dev/null
       print -P "%F{$AP_C_GREEN}[aporia] Icon set switched to '$style'.%f"
       ;;
     theme)
@@ -1710,15 +1726,7 @@ aporia() {
           export AP_THEME="$new_theme"
           local zrc="$HOME/.zshrc"
           if [[ -f $zrc ]]; then
-            if grep -q "export AP_THEME=" "$zrc"; then
-              perl -pi -e "s/^export AP_THEME=.*/export AP_THEME=$new_theme/" "$zrc"
-            else
-              if grep -q "aporia.zsh-theme" "$zrc"; then
-                perl -pi -e "s/^(.*aporia.zsh-theme)/export AP_THEME=$new_theme\n\$1/" "$zrc"
-              else
-                print "\nexport AP_THEME=$new_theme" >> "$zrc"
-              fi
-            fi
+            _ap_update_zrc "AP_THEME" "$new_theme" "$zrc"
           fi
           
           if (( $+functions[_ap_apply_theme] )); then
@@ -1737,6 +1745,39 @@ aporia() {
     activate) shift; aporia-activate-plugin "$@" ;;
     deactivate) shift; aporia-deactivate-plugin "$@" ;;
     activate-all) aporia-activate-all ;;
+    fonts)
+      shift
+      local sub=$1
+      if [[ "$sub" == "install" ]]; then
+        print -P "\n %F{$AP_C_BLUE}Installing JetBrainsMono Nerd Font...%f"
+        local font_dir="$HOME/.local/share/fonts"
+        [[ $(uname -s) == "Darwin" ]] && font_dir="$HOME/Library/Fonts"
+        mkdir -p "$font_dir"
+        local url="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.2.1/JetBrainsMono.zip"
+        local temp_dir=$(mktemp -d)
+        if command -v curl >/dev/null; then
+          curl -fsSL "$url" -o "$temp_dir/font.zip"
+        else
+          print -P "%F{$AP_C_RED}[aporia] curl is required to download fonts.%f"
+          return 1
+        fi
+        if command -v unzip >/dev/null; then
+          unzip -o "$temp_dir/font.zip" -d "$font_dir" >/dev/null
+        else
+          print -P "%F{$AP_C_RED}[aporia] unzip is required to extract fonts.%f"
+          return 1
+        fi
+        if command -v fc-cache >/dev/null; then
+          fc-cache -f "$font_dir"
+        fi
+        rm -rf "$temp_dir"
+        print -P "%F{$AP_C_GREEN}[aporia] JetBrainsMono Nerd Font installed to $font_dir.%f"
+        print -P "%F{$AP_C_YELLOW}Important: Restart your terminal and configure it to use this font!%f"
+      else
+        print -P "\n %F{$AP_C_BLUE}Fonts Commands:%f"
+        print -P "   %F{$AP_C_YELLOW}install%f   Download and install JetBrainsMono Nerd Font locally"
+      fi
+      ;;
     inspect|debug|env|data) _aporia_inspect_dump ;;
     info|status|"") _aporia_dashboard ;;
     help|--help|-h) _aporia_help ;;
